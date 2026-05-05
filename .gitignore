@@ -1,9 +1,4 @@
-# Ignore data
-data/
-*.SAFE
-*.jp2
-*.csv
-*.gz
+
 
 # Python
 __pycache__/

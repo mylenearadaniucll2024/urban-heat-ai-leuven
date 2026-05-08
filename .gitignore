@@ -1,8 +1,8 @@
 # Ignore data
 data/
 *.SAFE
-*.jp2
-*.csv
+# *.jp2
+# *.csv
 *.gz
 
 # Python

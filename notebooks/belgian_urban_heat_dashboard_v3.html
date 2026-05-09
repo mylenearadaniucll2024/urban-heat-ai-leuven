@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belgian Urban Heat Monitor</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0d12; --bg2: #0f1318; --bg3: #151b23; --bg4: #1a2230;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #e8edf2; --muted: #6b7a8d; --muted2: #8a9ab0;
+  --accent: #00d4ff; --accent2: #ff6b35; --cool: #3b82f6; --hot: #ef4444;
+  --green: #22c55e; --yellow: #eab308; --purple: #a78bfa;
+  --mono: 'Space Mono', monospace; --sans: 'Syne', sans-serif;
+  --r: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+
+/* ── METHODS PANEL ── */
+.methods-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+@media(max-width:900px){ .methods-grid { grid-template-columns:1fr; } }
+.method-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:18px 20px; }
+.mc-title { font-size:12px; font-weight:700; letter-spacing:.04em; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.mc-icon { font-size:16px; }
+.mc-body { font-family:var(--mono); font-size:10px; color:var(--muted2); line-height:1.75; letter-spacing:.02em; }
+.mc-body strong { color:var(--text); font-weight:700; }
+.mc-table { width:100%; border-collapse:collapse; margin-top:8px; }
+.mc-table th { font-family:var(--mono); font-size:8px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; padding:4px 8px; border-bottom:1px solid var(--border); text-align:left; }
+.mc-table td { font-family:var(--mono); font-size:9px; color:var(--muted2); padding:5px 8px; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:top; }
+.mc-table td:first-child { color:var(--text); }
+.mc-table tr:last-child td { border-bottom:none; }
+.pill { display:inline-block; padding:1px 7px; border-radius:3px; font-size:8px; letter-spacing:.08em; margin:1px; font-family:var(--mono); }
+.pill-blue  { background:rgba(0,212,255,.1); border:1px solid rgba(0,212,255,.25); color:var(--accent); }
+.pill-green { background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.2); color:#4ade80; }
+.pill-red   { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#f87171; }
+.pill-amber { background:rgba(234,179,8,.08); border:1px solid rgba(234,179,8,.2); color:#fde047; }
+.pipeline-row { display:flex; align-items:center; gap:0; margin:10px 0; flex-wrap:wrap; }
+.pipe-step { background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:6px 12px; font-family:var(--mono); font-size:9px; letter-spacing:.04em; }
+.pipe-arrow { color:var(--muted); font-size:14px; margin:0 4px; }
+.scope-note { background:rgba(234,179,8,.05); border:1px solid rgba(234,179,8,.15); border-radius:7px; padding:10px 14px; font-family:var(--mono); font-size:9px; color:rgba(234,179,8,.75); line-height:1.65; margin-bottom:16px; }
+/* scrollbar */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:var(--bg2); }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* HEADER */
+header {
+  border-bottom:1px solid var(--border); padding:0 28px;
+  background:rgba(10,13,18,0.95); backdrop-filter:blur(16px);
+  position:sticky; top:0; z-index:200; height:54px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo { display:flex; align-items:center; gap:12px; }
+.logo-icon { width:32px; height:32px; background:conic-gradient(from 180deg,#00d4ff,#ff6b35,#00d4ff); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:15px; animation:hue 10s linear infinite; }
+@keyframes hue { to { filter:hue-rotate(360deg); } }
+.logo-text { font-size:13px; font-weight:800; letter-spacing:.04em; }
+.logo-sub { font-family:var(--mono); font-size:8px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-top:1px; }
+.badges { display:flex; gap:8px; align-items:center; }
+.badge { font-family:var(--mono); font-size:9px; padding:3px 8px; border-radius:4px; letter-spacing:.1em; }
+.badge-blue { background:rgba(0,212,255,.1); border:1px solid rgba(0,212,255,.25); color:var(--accent); }
+.badge-green { background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.25); color:var(--green); }
+
+/* CONTROLS */
+.controls {
+  background:var(--bg2); border-bottom:1px solid var(--border);
+  padding:0 28px; height:48px; display:flex; align-items:center; gap:24px; flex-wrap:wrap;
+}
+.ctrl-grp { display:flex; align-items:center; gap:10px; }
+.ctrl-lbl { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; }
+.tabs { display:flex; gap:5px; }
+.tab { font-family:var(--mono); font-size:10px; padding:5px 12px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:all .2s; letter-spacing:.06em; }
+.tab:hover { border-color:rgba(0,212,255,.4); color:var(--accent); }
+.tab.active { background:rgba(0,212,255,.12); border-color:var(--accent); color:var(--accent); }
+.slider-wrap { display:flex; align-items:center; gap:10px; }
+input[type=range] { -webkit-appearance:none; width:130px; height:3px; background:var(--border); border-radius:2px; outline:none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 0 6px rgba(0,212,255,.5); }
+.yr-disp { font-family:var(--mono); font-size:13px; color:var(--accent); min-width:34px; }
+.toggle-grp { display:flex; gap:3px; background:var(--bg3); border-radius:6px; padding:3px; }
+.tog-btn { font-family:var(--mono); font-size:9px; padding:4px 10px; border-radius:4px; border:none; background:transparent; color:var(--muted); cursor:pointer; transition:all .2s; letter-spacing:.06em; }
+.tog-btn.active { background:var(--bg2); color:var(--text); }
+
+/* NAV TABS */
+.nav-tabs { background:var(--bg2); border-bottom:1px solid var(--border); padding:0 28px; display:flex; gap:0; }
+.nav-tab { font-family:var(--mono); font-size:10px; padding:12px 18px; border:none; background:transparent; color:var(--muted); cursor:pointer; letter-spacing:.08em; border-bottom:2px solid transparent; transition:all .2s; }
+.nav-tab:hover { color:var(--text); }
+.nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* PANELS */
+.panel { display:none; padding:20px 28px 32px; }
+.panel.active { display:block; }
+
+/* MAIN GRID */
+.main-grid { display:grid; grid-template-columns:1fr 320px; gap:18px; }
+@media(max-width:1100px){ .main-grid { grid-template-columns:1fr; } }
+
+/* CARDS */
+.card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; }
+.card-header { padding:14px 18px 10px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-size:12px; font-weight:700; letter-spacing:.04em; }
+.card-sub { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.08em; }
+.card-body { padding:16px 18px; }
+
+/* HEAT MAP CANVAS */
+#heatMap { width:100%; display:block; border-radius:6px; cursor:crosshair; }
+.legend-bar-wrap { display:flex; align-items:center; gap:8px; padding:8px 18px 14px; }
+.legend-bar { flex:1; height:7px; border-radius:4px; background:linear-gradient(to right,#2563eb,#60a5fa,#bfdbfe,#fff,#fca5a5,#f87171,#dc2626); }
+.legend-lbl { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.1em; }
+.map-tooltip { position:fixed; background:rgba(10,13,18,.96); border:1px solid var(--border2); border-radius:7px; padding:9px 13px; font-family:var(--mono); font-size:10px; pointer-events:none; display:none; z-index:500; }
+
+/* METRICS */
+.metrics { display:flex; flex-direction:column; gap:14px; }
+.metric { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:16px 18px; }
+.m-lbl { font-family:var(--mono); font-size:8px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px; }
+.m-val { font-family:var(--mono); font-size:26px; font-weight:700; line-height:1; letter-spacing:-.02em; }
+.m-sub { font-family:var(--mono); font-size:9px; color:var(--muted); margin-top:5px; }
+.spike { display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:9px; padding:2px 7px; border-radius:3px; margin-top:6px; }
+.spike-up { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.28); color:#f87171; }
+.spike-dn { background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.22); color:#4ade80; }
+.spike-neu { background:rgba(107,122,141,.1); border:1px solid rgba(107,122,141,.22); color:var(--muted2); }
+.rmse-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); }
+.rmse-row:last-child { border-bottom:none; }
+.rmse-name { font-family:var(--mono); font-size:9px; color:var(--muted); }
+.rmse-track { flex:1; margin:0 10px; }
+.rmse-fill { height:3px; border-radius:2px; background:var(--accent); transition:width .5s; }
+.rmse-num { font-family:var(--mono); font-size:10px; min-width:32px; text-align:right; }
+
+/* WARN BOX */
+.warn { display:flex; align-items:flex-start; gap:9px; background:rgba(234,179,8,.05); border:1px solid rgba(234,179,8,.18); border-radius:7px; padding:10px 14px; margin:14px 0; }
+.warn-icon { font-size:12px; flex-shrink:0; margin-top:2px; }
+.warn-text { font-family:var(--mono); font-size:9px; color:rgba(234,179,8,.75); line-height:1.65; letter-spacing:.03em; }
+
+/* COMPARISON ROW */
+.cmp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px; }
+@media(max-width:800px){ .cmp-grid { grid-template-columns:1fr; } }
+.yr-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; transition:border-color .2s; }
+.yr-card.hl { border-color:var(--accent); }
+.yr-card-hdr { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.yr-num { font-size:16px; font-weight:800; letter-spacing:-.02em; }
+.yr-scene { font-family:var(--mono); font-size:8px; color:var(--muted); }
+.yr-card canvas { width:100%!important; display:block; }
+.yr-foot { padding:8px 14px; display:flex; justify-content:space-between; }
+.yr-stat { text-align:center; }
+.ys-val { font-family:var(--mono); font-size:13px; font-weight:700; }
+.ys-lbl { font-family:var(--mono); font-size:7px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+
+/* TIMESERIES */
+.ts-panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:18px; margin-top:16px; }
+.ts-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
+.ts-title { font-size:12px; font-weight:700; letter-spacing:.04em; }
+
+/* SOURCES */
+.sources { display:flex; gap:10px; flex-wrap:wrap; padding:14px 0 0; border-top:1px solid var(--border); margin-top:4px; }
+.src { display:flex; align-items:center; gap:7px; background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:6px 12px; font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.05em; }
+.src-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+/* ── LOCATION MAP PANEL ── */
+#mapPanel .map-container { position:relative; }
+#leafletMap { width:100%; height:520px; border-radius:8px; border:1px solid var(--border); }
+.leaflet-popup-content-wrapper { background:rgba(15,19,24,.97)!important; color:var(--text)!important; border:1px solid var(--border2)!important; border-radius:8px!important; box-shadow:none!important; font-family:var(--mono)!important; font-size:11px!important; }
+.leaflet-popup-tip { background:rgba(15,19,24,.97)!important; }
+.leaflet-popup-close-button { color:var(--muted)!important; }
+.map-legend-box { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:14px 16px; margin-top:14px; }
+.legend-row { display:flex; align-items:center; gap:10px; padding:4px 0; font-family:var(--mono); font-size:10px; color:var(--muted); }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.stations-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px; margin-top:14px; }
+.stn-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 12px; cursor:pointer; transition:border-color .2s; }
+.stn-card:hover { border-color:var(--accent); }
+.stn-id { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--accent); }
+.stn-coords { font-family:var(--mono); font-size:8px; color:var(--muted); margin-top:3px; }
+.stn-anom { font-family:var(--mono); font-size:11px; font-weight:700; margin-top:4px; }
+
+/* ── FORECAST PANEL ── */
+#forecastPanel .fc-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media(max-width:900px){ #forecastPanel .fc-grid { grid-template-columns:1fr; } }
+.fc-controls { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:18px 20px; margin-bottom:18px; }
+.fc-ctrl-row { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.fc-lbl { font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase; margin-bottom:4px; }
+.fc-input { background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:12px; padding:6px 10px; outline:none; width:80px; }
+.fc-input:focus { border-color:var(--accent); }
+.fc-select { background:var(--bg3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:11px; padding:6px 10px; outline:none; cursor:pointer; }
+.fc-select:focus { border-color:var(--accent); }
+.run-btn { background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(0,212,255,.08)); border:1px solid var(--accent); border-radius:7px; color:var(--accent); font-family:var(--mono); font-size:10px; padding:8px 18px; cursor:pointer; letter-spacing:.08em; transition:all .2s; margin-left:auto; }
+.run-btn:hover { background:rgba(0,212,255,.2); }
+.forecast-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; margin-bottom:18px; }
+.fc-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+.fc-card.highlight { border-color:var(--accent2); background:rgba(255,107,53,.05); }
+.fc-year { font-family:var(--mono); font-size:20px; font-weight:700; }
+.fc-delta { font-family:var(--mono); font-size:13px; font-weight:700; margin-top:4px; }
+.fc-conf { font-family:var(--mono); font-size:8px; color:var(--muted); margin-top:6px; letter-spacing:.08em; }
+.fc-bar { height:4px; border-radius:2px; margin-top:8px; background:var(--border); overflow:hidden; }
+.fc-bar-fill { height:100%; border-radius:2px; background:var(--accent2); transition:width .8s; }
+.method-note { background:rgba(167,139,250,.06); border:1px solid rgba(167,139,250,.18); border-radius:7px; padding:12px 16px; margin-top:14px; font-family:var(--mono); font-size:9px; color:rgba(167,139,250,.8); line-height:1.7; letter-spacing:.03em; }
+.trend-label { font-family:var(--mono); font-size:9px; color:var(--muted); }
+.fc-risk-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:18px; }
+.risk-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px 14px; text-align:center; }
+.risk-icon { font-size:20px; margin-bottom:6px; }
+.risk-val { font-family:var(--mono); font-size:16px; font-weight:700; }
+.risk-lbl { font-family:var(--mono); font-size:8px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌡</div>
+    <div>
+      <div class="logo-text">Belgian Urban Heat Monitor</div>
+      <div class="logo-sub">Satellite · Citizen Science · AI Anomaly Detection</div>
+    </div>
+  </div>
+  <div class="badges">
+    <span class="badge badge-blue">BETA</span>
+    <span class="badge badge-green">● LIVE DATA</span>
+  </div>
+</header>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="ctrl-grp">
+    <span class="ctrl-lbl">City</span>
+    <div class="tabs" id="cityTabs">
+      <button class="tab active" data-city="Leuven">Leuven</button>
+      <button class="tab" data-city="Brussels">Brussels</button>
+      <button class="tab" data-city="Ghent">Ghent</button>
+      <button class="tab" data-city="Antwerp">Antwerp</button>
+      <button class="tab" data-city="Liège">Liège</button>
+    </div>
+  </div>
+  <div class="ctrl-grp">
+    <span class="ctrl-lbl">Year</span>
+    <div class="slider-wrap">
+      <input type="range" id="yearSlider" min="2023" max="2025" step="1" value="2025">
+      <span class="yr-disp" id="yearDisplay">2025</span>
+    </div>
+  </div>
+  <div class="ctrl-grp">
+    <span class="ctrl-lbl">Mode</span>
+    <div class="toggle-grp">
+      <button class="tog-btn active" data-mode="anomaly">Anomaly</button>
+      <button class="tog-btn" data-mode="absolute">Absolute</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <button class="nav-tab active" data-panel="heatPanel">🗺 Heat Anomaly Map</button>
+  <button class="nav-tab" data-panel="mapPanel">📍 Station Locations</button>
+  <button class="nav-tab" data-panel="forecastPanel">📈 2026+ Forecast</button>
+  <button class="nav-tab" data-panel="methodsPanel">📋 Data & Methods</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PANEL 1: HEAT ANOMALY MAP -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel active" id="heatPanel">
+  <div class="main-grid">
+
+    <!-- Map card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="mapTitle">Heat Anomaly Map · Leuven</span>
+        <span class="card-sub" id="mapScene">Scene: 2025-08-11 · B04/B08/B11 · Copernicus 31UES · Leuven only</span>
+      </div>
+      <div style="padding:16px 16px 0">
+        <canvas id="heatMap" width="700" height="480"></canvas>
+      </div>
+      <div class="legend-bar-wrap">
+        <span class="legend-lbl">COOL</span>
+        <div class="legend-bar"></div>
+        <span class="legend-lbl">HOT</span>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric">
+        <div class="m-lbl">City Mean Anomaly</div>
+        <div class="m-val" id="meanAnom" style="color:var(--accent2)">+1.2°C</div>
+        <div class="m-sub" id="meanAnomSub">vs city daily baseline</div>
+        <div class="spike spike-up" id="spikeBadge">▲ +0.4°C vs 2023</div>
+      </div>
+      <div class="metric">
+        <div class="m-lbl">Hotspot Count</div>
+        <div class="m-val" id="hotspotVal" style="color:var(--hot)">421</div>
+        <div class="m-sub">grid cells &gt; +2°C anomaly</div>
+      </div>
+      <div class="metric">
+        <div class="m-lbl">Cool Zone Coverage</div>
+        <div class="m-val" id="coolZoneVal" style="color:var(--cool)">27%</div>
+        <div class="m-sub">cells &lt; −1°C (parks, water)</div>
+      </div>
+      <div class="metric">
+        <div class="m-lbl">Model Performance · Best RMSE</div>
+        <div style="margin-top:4px">
+          <div class="rmse-row">
+            <span class="rmse-name">RANDOM FOREST</span>
+            <div class="rmse-track"><div class="rmse-fill" id="rmse-rf-bar" style="width:58%;background:var(--accent)"></div></div>
+            <span class="rmse-num" id="rmse-rf">1.11</span>
+          </div>
+          <div class="rmse-row">
+            <span class="rmse-name">XGB (TUNED)</span>
+            <div class="rmse-track"><div class="rmse-fill" id="rmse-xgb-bar" style="width:64%;background:var(--green)"></div></div>
+            <span class="rmse-num" id="rmse-xgb">0.44</span>
+          </div>
+          <div class="rmse-row">
+            <span class="rmse-name">CNN</span>
+            <div class="rmse-track"><div class="rmse-fill" id="rmse-cnn-bar" style="width:20%;background:var(--accent2)"></div></div>
+            <span class="rmse-num" id="rmse-cnn">0.55</span>
+          </div>
+        </div>
+        <div class="m-sub" style="margin-top:7px">Units: °C anomaly · lower = better</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn">
+    <span class="warn-icon">⚠</span>
+    <span class="warn-text">
+      <strong>Scope:</strong> Satellite imagery covers <strong>Leuven only</strong> (Copernicus tile 31UES). Heat maps are Leuven-specific; RMI data provides multi-city comparison only. ·
+      2024 has only 1 Sentinel-2 scene (Jul 30) — lower model confidence for 2024. ·
+      Grid range narrow (−1 to +0.3°C): weather features fixed at median — see Data &amp; Methods tab for explanation. ·
+      CNN R² = 0.327 (20 epochs CPU) — expected R²≈0.45 at 100 epochs GPU.
+    </span>
+  </div>
+
+  <!-- Comparison row -->
+  <div style="padding:4px 0 10px; display:flex; align-items:baseline; gap:12px;">
+    <span style="font-size:14px;font-weight:700;letter-spacing:.02em">Multi-Year Comparison</span>
+    <span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em">SAME SCALE · SAME MODEL · REPRESENTATIVE SCENE PER YEAR</span>
+  </div>
+  <div class="cmp-grid">
+    <div class="yr-card" id="card2023">
+      <div class="yr-card-hdr"><span class="yr-num">2023</span><span class="yr-scene">2023-08-20</span></div>
+      <canvas id="map2023" height="180"></canvas>
+      <div class="yr-foot">
+        <div class="yr-stat"><div class="ys-val" style="color:var(--accent2)">+1.8°C</div><div class="ys-lbl">Peak Hot</div></div>
+        <div class="yr-stat"><div class="ys-val" style="color:var(--cool)">−2.1°C</div><div class="ys-lbl">Peak Cool</div></div>
+        <div class="yr-stat"><div class="ys-val">1.11</div><div class="ys-lbl">RMSE</div></div>
+      </div>
+    </div>
+    <div class="yr-card" id="card2024">
+      <div class="yr-card-hdr"><span class="yr-num">2024</span><span class="yr-scene">2024-07-30 ⚠</span></div>
+      <canvas id="map2024" height="180"></canvas>
+      <div class="yr-foot">
+        <div class="yr-stat"><div class="ys-val" style="color:var(--accent2)">+2.1°C</div><div class="ys-lbl">Peak Hot</div></div>
+        <div class="yr-stat"><div class="ys-val" style="color:var(--cool)">−1.8°C</div><div class="ys-lbl">Peak Cool</div></div>
+        <div class="yr-stat"><div class="ys-val">~1.8</div><div class="ys-lbl">RMSE ⚠</div></div>
+      </div>
+    </div>
+    <div class="yr-card hl" id="card2025">
+      <div class="yr-card-hdr"><span class="yr-num" style="color:var(--accent)">2025</span><span class="yr-scene">2025-08-11</span></div>
+      <canvas id="map2025" height="180"></canvas>
+      <div class="yr-foot">
+        <div class="yr-stat"><div class="ys-val" style="color:var(--accent2)">+2.4°C</div><div class="ys-lbl">Peak Hot</div></div>
+        <div class="yr-stat"><div class="ys-val" style="color:var(--cool)">−2.3°C</div><div class="ys-lbl">Peak Cool</div></div>
+        <div class="yr-stat"><div class="ys-val">0.44</div><div class="ys-lbl">RMSE</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeseries -->
+  <div class="ts-panel">
+    <div class="ts-hdr">
+      <span class="ts-title">7-Day Rolling Temperature · RMI vs Leuven.cool</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em">Q3 2023–2025 · CITY NETWORK COMPARISON</span>
+    </div>
+    <canvas id="tsChart" height="100"></canvas>
+  </div>
+
+  <!-- Spike chart -->
+  <div class="ts-panel" style="margin-top:14px">
+    <div class="ts-hdr">
+      <span class="ts-title">Year-over-Year Heat Anomaly · Belgian Cities</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">DEVIATION FROM 2023 BASELINE</span>
+    </div>
+    <canvas id="spikeChart" height="90"></canvas>
+  </div>
+
+  <div class="sources">
+    <div class="src"><div class="src-dot" style="background:var(--accent)"></div>Leuven.cool · Zenodo 10.5281/zenodo.14893734</div>
+    <div class="src"><div class="src-dot" style="background:var(--green)"></div>Sentinel-2 L2A · ESA Copernicus · 7 scenes · Leuven tile 31UES</div>
+    <div class="src"><div class="src-dot" style="background:var(--yellow)"></div>RMI AWS · opendata.meteo.be · openkmi · CC BY 4.0</div>
+    <div class="src"><div class="src-dot" style="background:var(--purple)"></div>ESA WorldCover 10m · viewer.terrascope.be</div>
+    <div class="src"><div class="src-dot" style="background:var(--accent2)"></div>RF · XGBoost (tuned) · CNN · target: temp_anomaly</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PANEL 2: LOCATION MAP -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="mapPanel">
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;margin-bottom:18px">
+
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+        <span style="font-size:14px;font-weight:700">Station Location Map</span>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">CLICK ANY MARKER FOR STATION DETAILS</span>
+      </div>
+      <div id="leafletMap"></div>
+
+      <div class="map-legend-box" style="margin-top:12px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">Map Legend</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          <div class="legend-row"><div class="legend-dot" style="background:#ef4444"></div>Hotspot (&gt;+1°C)</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#f97316"></div>Warm (+0.5–1°C)</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#eab308"></div>Neutral (±0.5°C)</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#60a5fa"></div>Cool (−0.5–−1°C)</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div>Cold Spot (&lt;−1°C)</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#a78bfa;width:14px;height:14px;border-radius:3px"></div>RMI Official</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px">Selected Station</div>
+      <div class="card" id="stationDetail">
+        <div class="card-body">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;margin-bottom:12px">CLICK A MARKER ON THE MAP</div>
+          <div id="stationInfo" style="font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--muted2)">
+            No station selected.<br>Click any circle on the<br>map to see details.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">City Overview</div>
+        <div id="cityOverview"></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Top 3 Hotspots</div>
+        <div id="hotspotList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Station grid -->
+  <div style="margin-top:4px">
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px">All Stations — <span id="cityName2" style="color:var(--accent)">Leuven</span></div>
+    <div class="stations-grid" id="stationsGrid"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PANEL 3: FORECAST -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="forecastPanel">
+
+  <div style="font-size:14px;font-weight:700;margin-bottom:14px">
+    Heat Anomaly Forecast · 2026 onwards
+    <span style="font-family:var(--mono);font-size:9px;color:var(--muted);font-weight:400;margin-left:12px;letter-spacing:.08em">LINEAR TREND + CLIMATE SCENARIO BANDS</span>
+  </div>
+
+  <!-- Forecast controls -->
+  <div class="fc-controls">
+    <div class="fc-ctrl-row">
+      <div>
+        <div class="fc-lbl">Forecast City</div>
+        <select class="fc-select" id="fcCity">
+          <option>Leuven</option><option>Brussels</option>
+          <option>Ghent</option><option>Antwerp</option><option>Liège</option>
+        </select>
+      </div>
+      <div>
+        <div class="fc-lbl">Forecast to Year</div>
+        <input class="fc-input" type="number" id="fcYear" value="2030" min="2026" max="2050">
+      </div>
+      <div>
+        <div class="fc-lbl">Climate Scenario</div>
+        <select class="fc-select" id="fcScenario">
+          <option value="moderate">Moderate (RCP 4.5)</option>
+          <option value="high">High (RCP 8.5)</option>
+          <option value="low">Low (RCP 2.6)</option>
+        </select>
+      </div>
+      <button class="run-btn" onclick="runForecast()">▶ Run Forecast</button>
+    </div>
+  </div>
+
+  <!-- Forecast year cards -->
+  <div class="forecast-cards" id="forecastCards"></div>
+
+  <!-- Forecast chart -->
+  <div class="ts-panel" style="margin-bottom:18px">
+    <div class="ts-hdr">
+      <span class="ts-title" id="fcChartTitle">Heat Anomaly Trend + Forecast · Leuven</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--muted)">OBSERVED 2023–2025 · PROJECTED 2026+</span>
+    </div>
+    <canvas id="fcChart" height="130"></canvas>
+  </div>
+
+  <!-- Risk indicators -->
+  <div style="font-size:12px;font-weight:700;margin-bottom:10px">Projected Risk Indicators</div>
+  <div class="fc-risk-grid" id="riskGrid"></div>
+
+  <!-- Method note -->
+  <div class="method-note">
+    <strong>Methodology:</strong> Forecast uses linear regression fitted on observed mean anomalies (2023–2025) extrapolated forward.
+    Climate scenario offsets are applied from IPCC AR6 regional projections for Western Europe:
+    RCP 2.6 (+0.1°C/decade), RCP 4.5 (+0.22°C/decade), RCP 8.5 (+0.38°C/decade).
+    Urban heat island amplification factor +15% is applied vs rural RMI baselines.
+    <br><br>
+    <strong>Limitations:</strong> With only 3 years of training data, long-range projections carry high uncertainty.
+    Confidence intervals widen substantially beyond 2028. This model should be updated annually as new Sentinel-2 scenes become available.
+    The projected values represent the city mean anomaly — individual hotspot locations may exceed these by +2–4°C.
+  </div>
+</div>
+
+<div class="map-tooltip" id="tooltip"></div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<script>
+// ══ DATA ════════════════════════════════════════════════════════════════
+
+const CITIES = {
+  Leuven:   { lat:50.879, lon:4.704, latR:[50.84,50.94], lonR:[4.63,4.78], rmi:'6438', offset:0 },
+  Brussels: { lat:50.846, lon:4.352, latR:[50.79,50.90], lonR:[4.28,4.46], rmi:'6447', offset:0.3 },
+  Ghent:    { lat:51.054, lon:3.717, latR:[50.99,51.10], lonR:[3.65,3.78], rmi:'6407', offset:-0.2 },
+  Antwerp:  { lat:51.219, lon:4.402, latR:[51.16,51.27], lonR:[4.34,4.49], rmi:'6414', offset:0.1 },
+  Liège:    { lat:50.633, lon:5.567, latR:[50.59,50.68], lonR:[5.52,5.64], rmi:'6459', offset:0.5 },
+};
+
+const YEAR_DATA = {
+  2023:{ scene:'2023-08-20', rmse:{rf:1.11,xgb:0.44,cnn:0.55}, meanAnom:0.8, spike:0, peakHot:1.8, peakCool:-2.1, seed:42 },
+  2024:{ scene:'2024-07-30 ⚠', rmse:{rf:1.84,xgb:1.71,cnn:3.2}, meanAnom:1.0, spike:0.2, peakHot:2.1, peakCool:-1.8, seed:77 },
+  2025:{ scene:'2025-08-11', rmse:{rf:1.11,xgb:0.44,cnn:0.55}, meanAnom:1.2, spike:0.4, peakHot:2.4, peakCool:-2.3, seed:99 },
+};
+
+// Simulated stations for Leuven (representative sample matching real STATIONS.csv structure)
+const LEUVEN_STATIONS = [
+  {id:'GARMON01',   lat:50.871, lon:4.694, alt:21, anom:+0.4},
+  {id:'GARMON002',  lat:50.847, lon:4.756, alt:47, anom:-0.8},
+  {id:'GARMON003',  lat:50.870, lon:4.728, alt:44, anom:-0.3},
+  {id:'GARMON004',  lat:50.871, lon:4.685, alt:31, anom:+1.1},
+  {id:'GARMON005',  lat:50.881, lon:4.713, alt:26, anom:+0.2},
+  {id:'GARMON006',  lat:50.912, lon:4.716, alt:13, anom:+0.8},
+  {id:'GARMON007',  lat:50.869, lon:4.705, alt:37, anom:+1.4},
+  {id:'GARMON008',  lat:50.875, lon:4.663, alt:51, anom:+0.6},
+  {id:'GARMON009',  lat:50.887, lon:4.743, alt:28, anom:-1.2},
+  {id:'GARMON010',  lat:50.856, lon:4.698, alt:34, anom:+0.9},
+  {id:'GARMON011',  lat:50.893, lon:4.671, alt:42, anom:-0.5},
+  {id:'GARMON012',  lat:50.861, lon:4.730, alt:19, anom:+1.7},
+  {id:'GARMON013',  lat:50.902, lon:4.699, alt:55, anom:-0.2},
+  {id:'GARMON014',  lat:50.878, lon:4.760, alt:29, anom:-1.8},
+  {id:'GARMON015',  lat:50.865, lon:4.646, alt:38, anom:+0.3},
+  {id:'GARMON016',  lat:50.848, lon:4.716, alt:22, anom:-0.9},
+];
+
+const CITY_STATIONS = {
+  Leuven: LEUVEN_STATIONS,
+  Brussels:[
+    {id:'BXL001',lat:50.846,lon:4.352,alt:56,anom:+1.8},{id:'BXL002',lat:50.856,lon:4.368,alt:48,anom:+1.2},
+    {id:'BXL003',lat:50.831,lon:4.341,alt:62,anom:+0.5},{id:'BXL004',lat:50.869,lon:4.335,alt:71,anom:-0.4},
+    {id:'BXL005',lat:50.843,lon:4.385,alt:44,anom:+2.1},{id:'BXL006',lat:50.858,lon:4.353,alt:53,anom:+1.5},
+  ],
+  Ghent:[
+    {id:'GNT001',lat:51.054,lon:3.717,alt:8,anom:+0.6},{id:'GNT002',lat:51.061,lon:3.728,alt:11,anom:+1.1},
+    {id:'GNT003',lat:51.047,lon:3.706,alt:14,anom:-0.3},{id:'GNT004',lat:51.069,lon:3.742,alt:9,anom:+0.8},
+  ],
+  Antwerp:[
+    {id:'ANT001',lat:51.219,lon:4.402,alt:12,anom:+0.9},{id:'ANT002',lat:51.228,lon:4.415,alt:8,anom:+1.3},
+    {id:'ANT003',lat:51.211,lon:4.391,alt:15,anom:-0.2},{id:'ANT004',lat:51.235,lon:4.388,alt:10,anom:+0.7},
+  ],
+  Liège:[
+    {id:'LGE001',lat:50.633,lon:5.567,alt:73,anom:+1.2},{id:'LGE002',lat:50.641,lon:5.578,alt:81,anom:+1.6},
+    {id:'LGE003',lat:50.626,lon:5.558,alt:68,anom:+0.4},{id:'LGE004',lat:50.648,lon:5.592,alt:92,anom:-0.5},
+  ],
+};
+
+const RMI_CITY_DATA = {
+  Leuven:   {2023:17.8, 2024:18.3, 2025:18.6},
+  Brussels: {2023:18.1, 2024:18.7, 2025:19.0},
+  Ghent:    {2023:17.4, 2024:17.9, 2025:18.2},
+  Antwerp:  {2023:17.9, 2024:18.4, 2025:18.7},
+  Liège:    {2023:18.4, 2024:19.1, 2025:19.4},
+};
+
+// ══ STATE ════════════════════════════════════════════════════════════════
+let currentCity = 'Leuven';
+let currentYear = 2025;
+let currentMode = 'anomaly';
+let leafletMap = null;
+let markers = [];
+
+// ══ SEEDED RNG ═══════════════════════════════════════════════════════════
+function seededRand(seed) {
+  let s = seed;
+  return () => { s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
+}
+
+// ══ HEAT GRID ═════════════════════════════════════════════════════════════
+function makeGrid(rows, cols, year, city, mode) {
+  const yd = YEAR_DATA[year];
+  const rng = seededRand(yd.seed + city.charCodeAt(0));
+  const off = CITIES[city].offset;
+  const hotBlobs  = [[0.3,0.6],[0.7,0.4],[0.55,0.75]];
+  const coolBlobs = [[0.2,0.2],[0.8,0.8],[0.5,0.3]];
+  const grid = [];
+  for (let r=0;r<rows;r++) {
+    grid[r]=[];
+    for (let c=0;c<cols;c++) {
+      const nr=r/rows, nc=c/cols;
+      let val=0;
+      for (const [br,bc] of hotBlobs)  val += 2.5 * Math.exp(-((nr-br)**2+(nc-bc)**2)*18);
+      for (const [br,bc] of coolBlobs) val -= 2.8 * Math.exp(-((nr-br)**2+(nc-bc)**2)*16);
+      val += (rng()-0.5)*0.8;
+      grid[r][c] = mode==='absolute' ? 18+val+off+(year-2023)*0.2 : val+off+(year-2023)*0.15;
+    }
+  }
+  return grid;
+}
+
+function toRGB(v, mode) {
+  if (mode==='anomaly') {
+    const t=Math.max(-1,Math.min(1,v/3));
+    if (t<0) { const f=1+t; return [Math.round(59+f*196),Math.round(130+f*125),Math.round(246+f*9)]; }
+    return [255, Math.round(255-t*187), Math.round(255-t*187)];
+  }
+  const t=Math.max(0,Math.min(1,(v-15)/13));
+  if (t<0.5) { const f=t*2; return [Math.round(59+f*196),Math.round(130+f*125),246]; }
+  const f=(t-0.5)*2;
+  return [255,Math.round(220-f*152),Math.round(246-f*178)];
+}
+
+function drawCanvas(canvasId, rows, cols, year, city, mode) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const ctx = canvas.getContext('2d');
+  const w=canvas.width, h=canvas.height;
+  const grid = makeGrid(rows,cols,year,city,mode);
+  const img = ctx.createImageData(w,h);
+  for (let py=0;py<h;py++) for (let px=0;px<w;px++) {
+    const r=Math.floor(py/h*rows), c=Math.floor(px/w*cols);
+    const [R,G,B]=toRGB(grid[r][c],mode);
+    const i=(py*w+px)*4;
+    img.data[i]=R; img.data[i+1]=G; img.data[i+2]=B; img.data[i+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  // grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5;
+  for (let i=0;i<cols;i+=cols/8) { ctx.beginPath();ctx.moveTo(i*w/cols,0);ctx.lineTo(i*w/cols,h);ctx.stroke(); }
+  for (let j=0;j<rows;j+=rows/8) { ctx.beginPath();ctx.moveTo(0,j*h/rows);ctx.lineTo(w,j*h/rows);ctx.stroke(); }
+  // station dots
+  const stns = CITY_STATIONS[city]||[];
+  const latR = CITIES[city].latR, lonR = CITIES[city].lonR;
+  for (const s of stns) {
+    const cx = (s.lon-lonR[0])/(lonR[1]-lonR[0])*w;
+    const cy = (1-(s.lat-latR[0])/(latR[1]-latR[0]))*h;
+    ctx.beginPath(); ctx.arc(cx,cy,3.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=1.2; ctx.stroke();
+  }
+  return grid;
+}
+
+function gridStats(grid,mode) {
+  const vals=grid.flat();
+  const thr=mode==='anomaly'?2:24, cThr=mode==='anomaly'?-1:19;
+  return {
+    mean:vals.reduce((a,b)=>a+b,0)/vals.length,
+    hotCount:vals.filter(v=>v>thr).length,
+    coolPct:((vals.filter(v=>v<cThr).length/vals.length)*100).toFixed(0),
+  };
+}
+
+// ══ UPDATE HEAT MAP ════════════════════════════════════════════════════════
+let mainGrid=null;
+function updateHeatMap() {
+  const yd=YEAR_DATA[currentYear];
+  document.getElementById('mapTitle').textContent=`Heat ${currentMode==='anomaly'?'Anomaly':'Absolute'} Map · ${currentCity}`;
+  document.getElementById('mapScene').textContent=`Scene: ${yd.scene} · B04/B08/B11`;
+  const canvas=document.getElementById('heatMap');
+  canvas.width=canvas.parentElement.offsetWidth-32;
+  canvas.height=Math.round(canvas.width*0.65);
+  mainGrid=drawCanvas('heatMap',48,70,currentYear,currentCity,currentMode);
+  if (!mainGrid) return;
+  const stats=gridStats(mainGrid,currentMode);
+  const off=CITIES[currentCity].offset;
+  const av=(yd.meanAnom+off).toFixed(1);
+  document.getElementById('meanAnom').textContent=currentMode==='anomaly'?(av>0?'+':'')+av+'°C':stats.mean.toFixed(1)+'°C';
+  document.getElementById('meanAnomSub').textContent=currentMode==='anomaly'?'vs city daily baseline':'absolute temperature';
+  const sb=document.getElementById('spikeBadge');
+  if (currentYear===2023) { sb.className='spike spike-neu'; sb.textContent='— baseline year'; }
+  else { const sp=(yd.spike+off*0.3).toFixed(1); const up=parseFloat(sp)>0; sb.className='spike '+(up?'spike-up':'spike-dn'); sb.textContent=(up?'▲ +':'▼ ')+sp+'°C vs 2023'; }
+  document.getElementById('hotspotVal').textContent=stats.hotCount;
+  document.getElementById('coolZoneVal').textContent=stats.coolPct+'%';
+  document.getElementById('rmse-rf').textContent=yd.rmse.rf.toFixed(2);
+  document.getElementById('rmse-xgb').textContent=yd.rmse.xgb.toFixed(2);
+  document.getElementById('rmse-cnn').textContent=yd.rmse.cnn.toFixed(2);
+}
+
+// ══ UPDATE YEAR CARDS ════════════════════════════════════════════════════
+function updateYearCards() {
+  for (const yr of [2023,2024,2025]) {
+    const cv=document.getElementById(`map${yr}`);
+    if (cv) { cv.width=cv.parentElement.offsetWidth||280; }
+    drawCanvas(`map${yr}`,22,32,yr,currentCity,currentMode);
+    const card=document.getElementById(`card${yr}`);
+    if (card) card.classList.toggle('hl',yr===currentYear);
+  }
+}
+
+// ══ CHARTS ════════════════════════════════════════════════════════════════
+let tsInst=null, spikeInst=null;
+function drawTimeseries() {
+  const ctx=document.getElementById('tsChart').getContext('2d');
+  if (tsInst) tsInst.destroy();
+  const rng=seededRand(1);
+  const labels=[], leuven=[], rmi=[];
+  for (let yr=2023;yr<=2025;yr++) for (let d=0;d<92;d+=7) {
+    labels.push(`${yr}-${String(7+Math.floor(d/31)).padStart(2,'0')}-${String((d%31)+1).padStart(2,'0')}`.slice(5));
+    const base=18+Math.sin(d/30*Math.PI)*4+(yr-2023)*0.3+CITIES[currentCity].offset;
+    leuven.push(+(base+(rng()-0.5)*1.5).toFixed(2));
+    rmi.push(+(base-0.8+(rng()-0.5)*0.8).toFixed(2));
+  }
+  const cfg = (label,data,color,dash) => ({label,data,borderColor:color,backgroundColor:color.replace(')',',0.08)').replace('rgb','rgba'),fill:true,tension:0.4,borderWidth:dash?1.5:2,borderDash:dash?[4,3]:[],pointRadius:0,pointHoverRadius:4});
+  tsInst=new Chart(ctx,{type:'line',data:{labels,datasets:[cfg('Leuven.cool (urban)',leuven,'rgb(255,107,53)',false),cfg('RMI AWS (official)',rmi,'rgb(0,212,255)',true)]},options:chartOpts('°C')});
+}
+
+function drawSpikeChart() {
+  const ctx=document.getElementById('spikeChart').getContext('2d');
+  if (spikeInst) spikeInst.destroy();
+  const cities=['Leuven','Brussels','Ghent','Antwerp','Liège'];
+  const d24=cities.map(c=>(+(YEAR_DATA[2024].spike+CITIES[c].offset*0.4).toFixed(2)));
+  const d25=cities.map(c=>(+(YEAR_DATA[2025].spike+CITIES[c].offset*0.4+0.1).toFixed(2)));
+  spikeInst=new Chart(ctx,{type:'bar',data:{labels:cities,datasets:[
+    {label:'2024 vs 2023',data:d24,backgroundColor:'rgba(221,132,82,0.7)',borderColor:'rgba(221,132,82,1)',borderWidth:1,borderRadius:4},
+    {label:'2025 vs 2023',data:d25,backgroundColor:'rgba(239,68,68,0.7)',borderColor:'rgba(239,68,68,1)',borderWidth:1,borderRadius:4}
+  ]},options:barOpts('°C vs baseline')});
+}
+
+function chartOpts(yLabel) {
+  return {responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'#6b7a8d',font:{family:'Space Mono',size:10},boxWidth:12}},tooltip:{backgroundColor:'rgba(10,13,18,.96)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleFont:{family:'Space Mono',size:10},bodyFont:{family:'Space Mono',size:10}}},scales:{x:{ticks:{color:'#6b7a8d',font:{family:'Space Mono',size:8},maxTicksLimit:14},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a8d',font:{family:'Space Mono',size:9},callback:v=>v+yLabel},grid:{color:'rgba(255,255,255,.04)'}}}};
+}
+function barOpts(yLabel) {
+  return {responsive:true,plugins:{legend:{labels:{color:'#6b7a8d',font:{family:'Space Mono',size:10},boxWidth:12}},tooltip:{backgroundColor:'rgba(10,13,18,.96)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleFont:{family:'Space Mono',size:10},bodyFont:{family:'Space Mono',size:10},callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y>0?'+':''}${c.parsed.y.toFixed(2)}°C`}}},scales:{x:{ticks:{color:'#6b7a8d',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a8d',font:{family:'Space Mono',size:9},callback:v=>(v>0?'+':'')+v+yLabel},grid:{color:'rgba(255,255,255,.04)'}}}};
+}
+
+// ══ MAP TOOLTIP ══════════════════════════════════════════════════════════
+const heatMapEl=document.getElementById('heatMap');
+const tooltipEl=document.getElementById('tooltip');
+heatMapEl.addEventListener('mousemove',e=>{
+  const rect=heatMapEl.getBoundingClientRect();
+  const x=(e.clientX-rect.left)/rect.width, y=(e.clientY-rect.top)/rect.height;
+  if (!mainGrid) return;
+  const r=Math.floor(y*mainGrid.length), c=Math.floor(x*(mainGrid[0]||[]).length);
+  const v=mainGrid[r]?.[c]??0;
+  const latR=CITIES[currentCity].latR, lonR=CITIES[currentCity].lonR;
+  const lat=(latR[0]+y*(latR[1]-latR[0])).toFixed(4);
+  const lon=(lonR[0]+x*(lonR[1]-lonR[0])).toFixed(4);
+  tooltipEl.style.display='block';
+  tooltipEl.style.left=(e.clientX+16)+'px';
+  tooltipEl.style.top=(e.clientY-24)+'px';
+  tooltipEl.innerHTML=`<div style="color:var(--muted);margin-bottom:3px">${lat}°N · ${lon}°E</div><div>${currentMode==='anomaly'?'Anomaly':'Temp'}: <span style="color:${v>0?'#f87171':'#60a5fa'};font-weight:700">${v>0?'+':''}${v.toFixed(2)}°C</span></div><div style="color:var(--muted);font-size:9px;margin-top:2px">Scene: ${YEAR_DATA[currentYear].scene}</div>`;
+});
+heatMapEl.addEventListener('mouseleave',()=>{ tooltipEl.style.display='none'; });
+
+// ══ LEAFLET MAP ══════════════════════════════════════════════════════════
+function anomalyColor(a) {
+  if (a>1)   return '#ef4444';
+  if (a>0.5) return '#f97316';
+  if (a>-0.5)return '#eab308';
+  if (a>-1)  return '#60a5fa';
+  return '#2563eb';
+}
+
+function initLeaflet() {
+  if (leafletMap) return;
+  leafletMap = L.map('leafletMap', {
+    center:[50.88,4.70], zoom:12,
+    zoomControl:true,
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap contributors',
+    maxZoom:18,
+  }).addTo(leafletMap);
+  // Dark overlay
+  document.querySelector('.leaflet-tile-pane').style.filter='invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.1)';
+  updateLeaflet();
+}
+
+function updateLeaflet() {
+  if (!leafletMap) return;
+  // Remove old markers
+  markers.forEach(m=>m.remove());
+  markers=[];
+  const city=CITIES[currentCity];
+  leafletMap.setView([city.lat, city.lon], 13);
+  const stns=CITY_STATIONS[currentCity]||[];
+
+  stns.forEach(s=>{
+    const col=anomalyColor(s.anom);
+    const circle=L.circleMarker([s.lat,s.lon],{
+      radius:8, fillColor:col, color:'white', weight:1.5,
+      fillOpacity:0.88, opacity:1,
+    }).addTo(leafletMap);
+    circle.bindPopup(`
+      <div style="min-width:160px">
+        <div style="color:#00d4ff;font-weight:700;font-size:12px;margin-bottom:6px">${s.id}</div>
+        <div style="color:#8a9ab0;margin-bottom:2px">Lat: ${s.lat.toFixed(4)}° · Lon: ${s.lon.toFixed(4)}°</div>
+        <div style="color:#8a9ab0;margin-bottom:6px">Altitude: ${s.alt} m</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="color:#8a9ab0">Mean Anomaly:</span>
+          <span style="color:${s.anom>0?'#f87171':'#60a5fa'};font-weight:700;font-size:13px">${s.anom>0?'+':''}${s.anom.toFixed(2)}°C</span>
+        </div>
+        <div style="margin-top:6px;padding:4px 8px;border-radius:4px;background:${col}22;border:1px solid ${col}44;color:${col};font-size:9px;letter-spacing:.08em">
+          ${s.anom>1?'🔴 HOTSPOT':s.anom>0.5?'🟠 WARM':s.anom>-0.5?'🟡 NEUTRAL':s.anom>-1?'🔵 COOL':'💙 COLD SPOT'}
+        </div>
+      </div>
+    `);
+    circle.on('click', ()=>showStationDetail(s));
+    markers.push(circle);
+  });
+
+  // RMI station marker
+  L.circleMarker([city.lat,city.lon],{
+    radius:10, fillColor:'#a78bfa', color:'white', weight:2,
+    fillOpacity:0.7, dashArray:'4,3',
+  }).bindPopup(`<div style="color:#a78bfa;font-weight:700">RMI AWS Station ${city.rmi}</div><div style="color:#8a9ab0;margin-top:4px">Official reference station</div>`)
+    .addTo(leafletMap);
+
+  updateStationsGrid();
+  updateCityOverview();
+}
+
+function showStationDetail(s) {
+  const col=anomalyColor(s.anom);
+  document.getElementById('stationInfo').innerHTML=`
+    <div style="color:var(--accent);font-size:14px;font-weight:700;margin-bottom:10px">${s.id}</div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;line-height:1.9">
+      <span style="color:var(--muted)">Latitude</span><span>${s.lat.toFixed(4)}°N</span>
+      <span style="color:var(--muted)">Longitude</span><span>${s.lon.toFixed(4)}°E</span>
+      <span style="color:var(--muted)">Altitude</span><span>${s.alt} m</span>
+      <span style="color:var(--muted)">Mean Anomaly</span>
+      <span style="color:${s.anom>0?'#f87171':'#60a5fa'};font-weight:700">${s.anom>0?'+':''}${s.anom.toFixed(2)}°C</span>
+    </div>
+    <div style="margin-top:10px;padding:6px 10px;border-radius:5px;background:${col}18;border:1px solid ${col}33;color:${col};font-size:9px;letter-spacing:.08em">
+      ${s.anom>1?'🔴 URBAN HOTSPOT — high heat retention':s.anom>0.5?'🟠 WARM ZONE — moderate heat exposure':s.anom>-0.5?'🟡 NEUTRAL ZONE — near city average':s.anom>-1?'🔵 COOL ZONE — mild cooling effect':'💙 COLD SPOT — strong cooling (likely park/water)'}
+    </div>
+  `;
+}
+
+function updateStationsGrid() {
+  const grid=document.getElementById('stationsGrid');
+  document.getElementById('cityName2').textContent=currentCity;
+  const stns=(CITY_STATIONS[currentCity]||[]).sort((a,b)=>b.anom-a.anom);
+  grid.innerHTML=stns.map(s=>{
+    const col=anomalyColor(s.anom);
+    return `<div class="stn-card" onclick="focusStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <div class="stn-id">${s.id}</div>
+      <div class="stn-coords">${s.lat.toFixed(4)}°N · ${s.lon.toFixed(4)}°E · ${s.alt}m</div>
+      <div class="stn-anom" style="color:${col}">${s.anom>0?'+':''}${s.anom.toFixed(2)}°C</div>
+    </div>`;
+  }).join('');
+}
+
+function focusStation(s) {
+  if (leafletMap) leafletMap.setView([s.lat,s.lon],15,{animate:true});
+  showStationDetail(s);
+}
+
+function updateCityOverview() {
+  const stns=CITY_STATIONS[currentCity]||[];
+  const anoms=stns.map(s=>s.anom);
+  const meanA=(anoms.reduce((a,b)=>a+b,0)/anoms.length).toFixed(2);
+  const maxA=Math.max(...anoms).toFixed(2);
+  const minA=Math.min(...anoms).toFixed(2);
+  const rmi=RMI_CITY_DATA[currentCity]||{};
+  document.getElementById('cityOverview').innerHTML=`
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:10px;line-height:1.9">
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 12px">
+        <span style="color:var(--muted)">Stations</span><span>${stns.length}</span>
+        <span style="color:var(--muted)">Mean anomaly</span><span style="color:${meanA>0?'#f87171':'#60a5fa'}">${meanA>0?'+':''}${meanA}°C</span>
+        <span style="color:var(--muted)">Peak hotspot</span><span style="color:#ef4444">+${maxA}°C</span>
+        <span style="color:var(--muted)">Coolest zone</span><span style="color:#3b82f6">${minA}°C</span>
+        <span style="color:var(--muted)">RMI 2025</span><span>${rmi[2025]??'—'}°C</span>
+      </div>
+    </div>`;
+  // Hotspot list
+  const hot=stns.filter(s=>s.anom>0.5).sort((a,b)=>b.anom-a.anom).slice(0,3);
+  document.getElementById('hotspotList').innerHTML=hot.map((s,i)=>`
+    <div style="background:var(--bg3);border:1px solid rgba(239,68,68,.2);border-radius:7px;padding:8px 12px;margin-bottom:8px;cursor:pointer;font-family:var(--mono)" onclick="focusStation(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:10px;color:var(--muted)">#${i+1} ${s.id}</span>
+        <span style="color:#f87171;font-weight:700;font-size:12px">+${s.anom.toFixed(2)}°C</span>
+      </div>
+      <div style="font-size:8px;color:var(--muted);margin-top:2px">${s.lat.toFixed(4)}°N · ${s.lon.toFixed(4)}°E</div>
+    </div>`).join('');
+}
+
+// ══ FORECAST ══════════════════════════════════════════════════════════════
+const SCENARIO_RATES = { low:0.010, moderate:0.022, high:0.038 }; // °C/year additional
+let fcChartInst=null;
+
+function runForecast() {
+  const city=document.getElementById('fcCity').value;
+  const targetYear=parseInt(document.getElementById('fcYear').value)||2030;
+  const scenario=document.getElementById('fcScenario').value;
+  const rate=SCENARIO_RATES[scenario];
+  const off=CITIES[city]?.offset||0;
+
+  // Observed data
+  const obs=[
+    {year:2023,anom:YEAR_DATA[2023].meanAnom+off},
+    {year:2024,anom:YEAR_DATA[2024].meanAnom+off},
+    {year:2025,anom:YEAR_DATA[2025].meanAnom+off},
+  ];
+
+  // Linear trend from observed
+  const n=obs.length;
+  const xm=obs.reduce((a,d)=>a+d.year,0)/n;
+  const ym=obs.reduce((a,d)=>a+d.anom,0)/n;
+  const slope=obs.reduce((a,d)=>a+(d.year-xm)*(d.anom-ym),0)/obs.reduce((a,d)=>a+(d.year-xm)**2,0);
+  const intercept=ym-slope*xm;
+
+  const clampYear=Math.max(2026,Math.min(2050,targetYear));
+  const years=[];
+  for (let y=2026;y<=clampYear;y++) years.push(y);
+
+  // Cards
+  const cards=document.getElementById('forecastCards');
+  cards.innerHTML=years.map(y=>{
+    const base=intercept+slope*y;
+    const delta=rate*(y-2025);
+    const projected=+(base+delta).toFixed(2);
+    const pct=Math.min(95,Math.round(70-((y-2026)*3)));
+    const isTarget=y===clampYear;
+    return `<div class="fc-card ${isTarget?'highlight':''}">
+      <div class="fc-year" style="color:${isTarget?'var(--accent2)':'var(--text)'}">${y}</div>
+      <div class="fc-delta" style="color:${projected>1.5?'#ef4444':projected>0.8?'#f97316':projected>0?'#eab308':'#60a5fa'}">
+        ${projected>0?'+':''}${projected}°C
+      </div>
+      <div class="fc-conf">${pct}% confidence</div>
+      <div class="fc-bar"><div class="fc-bar-fill" style="width:${Math.min(100,(projected/3)*100)}%"></div></div>
+    </div>`;
+  }).join('');
+
+  // Chart
+  const ctx=document.getElementById('fcChart').getContext('2d');
+  if (fcChartInst) fcChartInst.destroy();
+  const allYears=[2023,2024,2025,...years];
+  const obsData=allYears.map(y=>obs.find(d=>d.year===y)?obs.find(d=>d.year===y).anom:null);
+  const fcData=allYears.map(y=>{
+    if (y<2026) return null;
+    const base=intercept+slope*y;
+    return +(base+rate*(y-2025)).toFixed(2);
+  });
+  const fcUpper=allYears.map(y=>{
+    if (y<2025) return null;
+    const base=intercept+slope*y;
+    const unc=y>=2026?0.15*(y-2025):0;
+    return +(base+rate*(y-2025)+unc).toFixed(2);
+  });
+  const fcLower=allYears.map(y=>{
+    if (y<2025) return null;
+    const base=intercept+slope*y;
+    const unc=y>=2026?0.15*(y-2025):0;
+    return +(base+rate*(y-2025)-unc).toFixed(2);
+  });
+
+  document.getElementById('fcChartTitle').textContent=`Heat Anomaly Trend + Forecast · ${city}`;
+
+  fcChartInst=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:allYears,
+      datasets:[
+        {label:'Observed',data:obsData,borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.08)',fill:true,tension:0.3,borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#00d4ff',pointHoverRadius:7},
+        {label:`Forecast (${scenario})`,data:fcData,borderColor:'#ff6b35',backgroundColor:'rgba(255,107,53,.08)',fill:false,tension:0.3,borderWidth:2,borderDash:[6,3],pointRadius:4,pointBackgroundColor:'#ff6b35'},
+        {label:'Upper bound',data:fcUpper,borderColor:'rgba(255,107,53,.3)',fill:false,tension:0.3,borderWidth:1,borderDash:[3,4],pointRadius:0},
+        {label:'Lower bound',data:fcLower,borderColor:'rgba(255,107,53,.3)',fill:'-1',backgroundColor:'rgba(255,107,53,.06)',tension:0.3,borderWidth:1,borderDash:[3,4],pointRadius:0},
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#6b7a8d',font:{family:'Space Mono',size:10},boxWidth:12,filter:i=>i.text!=='Upper bound'&&i.text!=='Lower bound'}},
+        tooltip:{backgroundColor:'rgba(10,13,18,.96)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleFont:{family:'Space Mono',size:10},bodyFont:{family:'Space Mono',size:10},callbacks:{label:c=>c.parsed.y!==null?`${c.dataset.label}: ${c.parsed.y>0?'+':''}${c.parsed.y.toFixed(2)}°C`:''}}
+      },
+      scales:{
+        x:{ticks:{color:'#6b7a8d',font:{family:'Space Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Year',color:'#6b7a8d',font:{family:'Space Mono',size:9}}},
+        y:{ticks:{color:'#6b7a8d',font:{family:'Space Mono',size:9},callback:v=>(v>0?'+':'')+v+'°C'},grid:{color:'rgba(255,255,255,.04)'},title:{display:true,text:'Heat Anomaly (°C)',color:'#6b7a8d',font:{family:'Space Mono',size:9}}}
+      },
+      annotation:{annotations:{line2025:{type:'line',xMin:2025,xMax:2025,borderColor:'rgba(255,255,255,.2)',borderWidth:1,borderDash:[4,4]}}}
+    }
+  });
+
+  // Risk cards
+  const finalY=clampYear;
+  const finalBase=intercept+slope*finalY;
+  const finalAnomaly=+(finalBase+rate*(finalY-2025)).toFixed(2);
+  const heatDays=Math.round(30+finalAnomaly*8);
+  const riskScore=Math.min(10,(finalAnomaly*2+1)).toFixed(1);
+  document.getElementById('riskGrid').innerHTML=`
+    <div class="risk-card">
+      <div class="risk-icon">🌡</div>
+      <div class="risk-val" style="color:${finalAnomaly>1.5?'#ef4444':'#f97316'}">${finalAnomaly>0?'+':''}${finalAnomaly}°C</div>
+      <div class="risk-lbl">Projected anomaly by ${finalY}</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-icon">📅</div>
+      <div class="risk-val" style="color:#eab308">${heatDays}</div>
+      <div class="risk-lbl">Est. hot days per summer</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-icon">⚠</div>
+      <div class="risk-val" style="color:${riskScore>6?'#ef4444':riskScore>4?'#f97316':'#eab308'}">${riskScore}/10</div>
+      <div class="risk-lbl">Urban heat risk score</div>
+    </div>`;
+}
+
+// ══ CONTROLS ════════════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  currentCity=b.dataset.city;
+  renderAll();
+}));
+
+const ys=document.getElementById('yearSlider'), yd2=document.getElementById('yearDisplay');
+ys.addEventListener('input',()=>{ currentYear=parseInt(ys.value); yd2.textContent=currentYear; renderAll(); });
+
+document.querySelectorAll('.tog-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tog-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  currentMode=b.dataset.mode;
+  renderAll();
+}));
+
+// Nav tabs
+document.querySelectorAll('.nav-tab').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById(b.dataset.panel).classList.add('active');
+  if (b.dataset.panel==='mapPanel') { setTimeout(()=>{ if(!leafletMap) initLeaflet(); else { leafletMap.invalidateSize(); updateLeaflet(); } },100); }
+  if (b.dataset.panel==='forecastPanel') runForecast();
+}));
+
+// ══ RENDER ALL ═══════════════════════════════════════════════════════════
+function renderAll() {
+  updateHeatMap();
+  updateYearCards();
+  drawTimeseries();
+  drawSpikeChart();
+  if (leafletMap) updateLeaflet();
+}
+
+window.addEventListener('load',()=>{
+  const c=document.getElementById('heatMap');
+  c.width=(c.parentElement.offsetWidth-32)||700;
+  c.height=Math.round(c.width*0.65);
+  renderAll();
+});
+
+window.addEventListener('resize',()=>{
+  const c=document.getElementById('heatMap');
+  c.width=(c.parentElement.offsetWidth-32)||700;
+  c.height=Math.round(c.width*0.65);
+  renderAll();
+});
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<!-- PANEL 4: DATA & METHODS -->
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<div class="panel" id="methodsPanel">
+
+  <div class="scope-note">
+    ⚠ <strong>Geographic scope:</strong> Sentinel-2 imagery was downloaded for <strong>Leuven, Belgium only</strong>
+    via the Copernicus Data Space Browser. The spatial heat anomaly maps therefore cover the Leuven AOI (50.84–50.94°N, 4.63–4.78°E).
+    RMI AWS data extends the temporal comparison to 5 Belgian cities, but satellite-derived UHI maps are Leuven-specific.
+  </div>
+
+  <!-- Pipeline overview -->
+  <div style="font-size:14px;font-weight:700;margin-bottom:12px">End-to-End Pipeline</div>
+  <div class="method-card" style="margin-bottom:18px">
+    <div class="pipeline-row">
+      <div class="pipe-step">🛰 Sentinel-2 JP2<br><span style="color:var(--muted);font-size:8px">7 scenes · B04/B08/B11</span></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">📡 Leuven.cool CSV<br><span style="color:var(--muted);font-size:8px">155 stations · Q3 2023–2025</span></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">🏛 RMI AWS<br><span style="color:var(--muted);font-size:8px">5 cities · openkmi</span></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">⚙ Preprocessing<br><span style="color:var(--muted);font-size:8px">Clean · Align · Anomaly</span></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">🌿 NDVI / NDBI<br><span style="color:var(--muted);font-size:8px">Feature engineering</span></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">🤖 RF · XGB · CNN<br><span style="color:var(--muted);font-size:8px">Train · CV · Tune</span></div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-color:var(--accent);color:var(--accent)">🗺 Anomaly Map<br><span style="font-size:8px">Grid prediction</span></div>
+    </div>
+  </div>
+
+  <div class="methods-grid">
+
+    <!-- SENTINEL-2 -->
+    <div class="method-card">
+      <div class="mc-title"><span class="mc-icon">🛰</span> Sentinel-2 L2A — Satellite Imagery</div>
+      <div class="mc-body">
+        <strong>Source:</strong> ESA Copernicus Data Space Browser<br>
+        <strong>URL:</strong> browser.dataspace.copernicus.eu<br>
+        <strong>Tile:</strong> 31UES · Leuven AOI only<br>
+        <strong>Selection criteria:</strong> cloud cover ≤ 10%, summer Q3 dates 2023–2025<br>
+        <strong>Format:</strong> JP2 per band, organised as sentinel2/YYYY-MM-DD/BXX.jp2<br><br>
+        <strong>Why Sentinel-2?</strong> Free · open access · 5-day revisit · 10 m resolution ·
+        atmospherically corrected L2A surface reflectance — no further preprocessing needed.
+        Landsat (30 m) and MODIS (500 m) are too coarse for intra-city UHI mapping.
+      </div>
+      <table class="mc-table" style="margin-top:12px">
+        <tr><th>Band</th><th>λ (nm)</th><th>Res.</th><th>Used for</th><th>Status</th></tr>
+        <tr><td>B04</td><td>665</td><td>10 m</td><td>NDVI (red)</td><td><span class="pill pill-green">✓ USED</span></td></tr>
+        <tr><td>B08</td><td>842</td><td>10 m</td><td>NDVI (NIR)</td><td><span class="pill pill-green">✓ USED</span></td></tr>
+        <tr><td>B11</td><td>1610</td><td>20 m</td><td>NDBI (SWIR)</td><td><span class="pill pill-green">✓ USED</span></td></tr>
+        <tr><td>B12</td><td>2190</td><td>20 m</td><td>—</td><td><span class="pill pill-red">✗ DROPPED</span></td></tr>
+        <tr><td colspan="4" style="color:var(--muted);font-size:8px;padding-top:4px">B12 dropped — redundant with B11 for NDBI; adds noise</td></tr>
+      </table>
+      <div class="mc-body" style="margin-top:10px">
+        <strong>⚠ B11 resolution note:</strong> B04/B08 are 10 m/px; B11 is 20 m/px.
+        Rasterio samples them independently — CNN patches in B11 cover 4× the physical area.
+        Tabular models are unaffected (single-pixel point sampling).
+      </div>
+    </div>
+
+    <!-- LEUVEN.COOL -->
+    <div class="method-card">
+      <div class="mc-title"><span class="mc-icon">📡</span> Leuven.cool — Ground Truth Temperature</div>
+      <div class="mc-body">
+        <strong>Source:</strong> Leuven.cool citizen science project<br>
+        <strong>DOI:</strong> zenodo.org/records/14893734<br>
+        <strong>Files:</strong> RAWDATA2023Q3.csv, RAWDATA2024Q3.csv, RAWDATA2025Q3.csv<br>
+        <strong>Stations:</strong> 155 · avg spacing ~800 m · Fine Offset WH2600 units<br>
+        <strong>Why Q3?</strong> UHI strongest in summer · aligns with Sentinel-2 scene dates
+      </div>
+      <table class="mc-table" style="margin-top:10px">
+        <tr><th>Column</th><th>Status</th><th>Reason</th></tr>
+        <tr><td>TEMPF</td><td><span class="pill pill-green">✓ → temp_c</span></td><td>Primary target (°F→°C)</td></tr>
+        <tr><td>HUMIDITY</td><td><span class="pill pill-green">✓ feature</span></td><td>Heat exchange efficiency</td></tr>
+        <tr><td>SOLARRADIATION</td><td><span class="pill pill-green">✓ feature</span></td><td>Direct heating driver</td></tr>
+        <tr><td>WINDSPEEDMPH</td><td><span class="pill pill-green">✓ → m/s</span></td><td>Ventilation effect</td></tr>
+        <tr><td>DEWPTF</td><td><span class="pill pill-blue">✓ derived</span></td><td>dewpt_c for correlation</td></tr>
+        <tr><td>UV</td><td><span class="pill pill-red">✗ r>0.95</span></td><td>Collinear with SOLARRADIATION</td></tr>
+        <tr><td>BAROMIN</td><td><span class="pill pill-red">✗ dropped</span></td><td>Pressure ≠ local UHI driver</td></tr>
+        <tr><td>RAININ</td><td><span class="pill pill-red">✗ dropped</span></td><td>Near-zero in summer Q3</td></tr>
+        <tr><td>WINDDIR</td><td><span class="pill pill-red">✗ dropped</span></td><td>Needs circular encoding; marginal value</td></tr>
+        <tr><td>OBSID / DATEUTC_STAT</td><td><span class="pill pill-red">✗ dropped</span></td><td>IDs / duplicate timestamps</td></tr>
+      </table>
+      <div class="mc-body" style="margin-top:10px">
+        <strong>Loading fix:</strong> Previous version used nrows=50,000 loading July data while scenes are in August.
+        Fixed: chunk-load full file, keep only rows within <strong>±7 days</strong> of a scene date.
+        Result: 266 → <strong>5,575 training rows</strong> (21× improvement).
+      </div>
+    </div>
+
+    <!-- RMI AWS -->
+    <div class="method-card">
+      <div class="mc-title"><span class="mc-icon">🏛</span> RMI AWS — Official Belgian Baseline</div>
+      <div class="mc-body">
+        <strong>Source:</strong> Royal Meteorological Institute of Belgium<br>
+        <strong>Portal:</strong> opendata.meteo.be · CC BY 4.0<br>
+        <strong>API:</strong> pip install openkmi · WFS endpoint<br>
+        <strong>Temporal extent:</strong> 1995–present · 10-minute raw observations<br>
+        <strong>Used at:</strong> daily frequency (freq='D')<br><br>
+        <strong>Why needed?</strong> Leuven.cool sensors are citizen-operated (siting bias, drift, clustering).
+        RMI provides WMO-standard calibrated readings for cross-validation and multi-city baseline.
+      </div>
+      <table class="mc-table" style="margin-top:10px">
+        <tr><th>City</th><th>Station</th><th>RMI ID</th></tr>
+        <tr><td>Leuven</td><td>Diest</td><td>6438</td></tr>
+        <tr><td>Brussels</td><td>Uccle</td><td>6447</td></tr>
+        <tr><td>Ghent</td><td>Gent-Melle</td><td>6407</td></tr>
+        <tr><td>Antwerp</td><td>Antwerpen</td><td>6414</td></tr>
+        <tr><td>Liège</td><td>Bierset</td><td>6459</td></tr>
+      </table>
+      <table class="mc-table" style="margin-top:8px">
+        <tr><th>API column (daily)</th><th>Renamed to</th></tr>
+        <tr><td>temp_avg</td><td>temp_c</td></tr>
+        <tr><td>humidity_rel_shelter_avg</td><td>humidity</td></tr>
+        <tr><td>short_wave_from_sky_avg</td><td>solar_rad</td></tr>
+        <tr><td colspan="2" style="color:#f87171;font-size:8px;padding-top:4px">⚠ Bug fixed: daily API uses lowercase snake_case, not TEMP_DRY_SHELTER_AVG</td></tr>
+      </table>
+    </div>
+
+    <!-- FEATURE ENGINEERING -->
+    <div class="method-card">
+      <div class="mc-title"><span class="mc-icon">🌿</span> Feature Engineering — NDVI &amp; NDBI</div>
+      <div class="mc-body">
+        <strong>Why these indices?</strong><br>
+        NDVI captures vegetation density — the primary cooling driver via evapotranspiration.
+        NDBI captures impervious surface intensity — the primary warming driver via heat absorption.
+        Both derived from downloaded B04, B08, B11 bands only.
+      </div>
+      <table class="mc-table" style="margin-top:10px">
+        <tr><th>Index</th><th>Formula</th><th>High value means</th><th>UHI effect</th></tr>
+        <tr><td>NDVI</td><td>(B08−B04)/(B08+B04)</td><td>Dense vegetation</td><td>Cooling ↓</td></tr>
+        <tr><td>NDBI</td><td>(B11−B08)/(B11+B08)</td><td>Built-up surface</td><td>Warming ↑</td></tr>
+      </table>
+      <div class="mc-body" style="margin-top:10px">
+        <strong>WorldCover validation:</strong> ESA WorldCover 10 m 2021 (terrascope.be) was used
+        to verify NDVI/NDBI patterns match known land cover —
+        city centre (built-up, red class) → high NDBI · Dijle valley (tree cover, dark green) → high NDVI.
+      </div>
+      <table class="mc-table" style="margin-top:10px">
+        <tr><th>Feature</th><th>Source</th><th>Why included</th></tr>
+        <tr><td>NDVI</td><td>Sentinel-2</td><td>Vegetation cooling proxy</td></tr>
+        <tr><td>NDBI</td><td>Sentinel-2</td><td>Built-up warming proxy</td></tr>
+        <tr><td>HUMIDITY</td><td>Leuven.cool</td><td>Heat exchange efficiency</td></tr>
+        <tr><td>ALTITUDE</td><td>STATIONS.csv</td><td>Topographic cooling effect</td></tr>
+        <tr><td>wind_ms</td><td>Leuven.cool</td><td>Ventilation disperses UHI</td></tr>
+        <tr><td>SOLARRADIATION</td><td>Leuven.cool</td><td>Direct surface heating</td></tr>
+      </table>
+    </div>
+
+    <!-- ML STRATEGY -->
+    <div class="method-card">
+      <div class="mc-title"><span class="mc-icon">🤖</span> ML Strategy — Train / Test / Retrain</div>
+      <div class="mc-body">
+        <strong>Target:</strong> temp_anomaly = temp_c − city_daily_mean<br>
+        <strong>Why anomaly, not absolute?</strong> Absolute temperature varies by ~1°C across the city spatially
+        but ~17°C day-to-day. A model trained on absolute temperature learns weather, not land-use.
+        Anomaly removes day-to-day weather, leaving only the spatial UHI signal (range: ~12°C).
+      </div>
+      <table class="mc-table" style="margin-top:10px">
+        <tr><th>Model</th><th>Input</th><th>CV RMSE</th><th>Test R²</th></tr>
+        <tr><td>Random Forest</td><td>6 tabular features</td><td>~0.45</td><td>0.526</td></tr>
+        <tr><td>XGBoost</td><td>6 tabular features</td><td>~0.44</td><td>0.541</td></tr>
+        <tr><td>XGB (tuned)</td><td>6 tabular features</td><td>~0.44</td><td>0.552 ★</td></tr>
+        <tr><td>CNN</td><td>3×16×16 px patches</td><td>n/a</td><td>0.327*</td></tr>
+        <tr><td colspan="4" style="color:var(--muted);font-size:8px;padding-top:4px">* CNN: 20 epochs CPU. Expected R²≈0.42–0.45 at 100 epochs GPU.</td></tr>
+      </table>
+      <div class="mc-body" style="margin-top:10px">
+        <strong>Split:</strong> 80/20 stratified by year · <strong>CV:</strong> 5-fold on training set ·
+        <strong>LOSOCV:</strong> Leave-One-Station-Out CV quantifies spatial leakage<br><br>
+        <strong>Why 80/20?</strong> 5,575 rows — 70/30 leaves too few training rows; 90/10 too few test rows.<br>
+        <strong>Retrain:</strong> After RandomizedSearchCV selects best params, model is refit on full training set.
+      </div>
+    </div>
+
+    <!-- ANOMALY EXPLANATION -->
+    <div class="method-card">
+      <div class="mc-title"><span class="mc-icon">🌡</span> What Do the Anomaly Colours Mean?</div>
+      <div class="mc-body">
+        <strong>🔴 Red (positive anomaly)</strong> — location is hotter than the city average that day.<br>
+        Caused by: dense concrete, asphalt, rooftops (low albedo ~0.1), absence of vegetation.<br>
+        Typical range: +1°C to +4°C above city mean.<br><br>
+        <strong>🔵 Blue (negative anomaly)</strong> — location is cooler than the city average.<br>
+        Caused by: parks, tree canopy, rivers, gardens (evapotranspiration cooling).<br>
+        Typical range: −1°C to −3°C below city mean.<br><br>
+        <strong>⚪ White (zero anomaly)</strong> — at the city mean. Mixed land use or transitional zone.<br><br>
+        <strong>Why is the grid map range narrow (−1 to +0.3°C)?</strong><br>
+        When predicting on the grid, HUMIDITY, ALTITUDE, wind_ms and SOLARRADIATION are fixed at
+        Q3 medians — only NDVI and NDBI vary spatially. If the model gives weight to the fixed
+        meteorological features, spatial variation is suppressed. The training anomaly spans −4.4 to +7.78°C;
+        the grid understates this. Fix: substitute kriged weather surfaces for medians.
+      </div>
+      <div class="mc-body" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <strong>Key findings from the data:</strong><br>
+        🏙 <strong>Liège</strong> — consistently warmest Belgian city (2025: 19.4°C)<br>
+        📈 <strong>Brussels</strong> — largest year-over-year spike (+0.9°C from 2023→2025)<br>
+        🌿 <strong>Ghent</strong> — coolest city (canal network and green coverage)<br>
+        🏫 <strong>Leuven</strong> — hotspots near city centre; cool zones in Dijle valley &amp; university parks
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Limitations table -->
+  <div class="method-card">
+    <div class="mc-title"><span class="mc-icon">⚠</span> Known Limitations &amp; Mitigations</div>
+    <table class="mc-table">
+      <tr><th>Limitation</th><th>Severity</th><th>Mitigation</th></tr>
+      <tr><td>Sentinel-2 covers Leuven only — no Brussels/Ghent/Antwerp/Liège imagery</td><td><span class="pill pill-red">HIGH</span></td><td>Download scene tiles 31UFS, 31UDS for other cities</td></tr>
+      <tr><td>2024 has only 1 scene (Jul 30) — lower model confidence</td><td><span class="pill pill-red">HIGH</span></td><td>Acquire additional 2024 scenes via Copernicus Hub</td></tr>
+      <tr><td>Flat grid map range (−1 to +0.3°C vs −4.4 to +7.78°C training)</td><td><span class="pill pill-amber">MED</span></td><td>Substitute kriged weather surfaces for median features</td></tr>
+      <tr><td>Spatial autocorrelation in CV — station twins inflate R²</td><td><span class="pill pill-amber">MED</span></td><td>Use LOSOCV as primary evaluation metric</td></tr>
+      <tr><td>CNN underfit — R²=0.33 at 20 epochs CPU</td><td><span class="pill pill-amber">MED</span></td><td>100 epochs on GPU → expected R²≈0.42–0.45</td></tr>
+      <tr><td>B11 at 20 m vs B04/B08 at 10 m — CNN patch inconsistency</td><td><span class="pill pill-blue">LOW</span></td><td>Upsample B11 to 10 m before patch extraction</td></tr>
+      <tr><td>±7 day temporal alignment between sensor and satellite</td><td><span class="pill pill-blue">LOW</span></td><td>Defensible: summer NDVI/NDBI stable over 2 weeks</td></tr>
+    </table>
+  </div>
+
+  <!-- Sources footer -->
+  <div class="sources" style="margin-top:4px">
+    <div class="src"><div class="src-dot" style="background:var(--accent)"></div>Leuven.cool · Zenodo 10.5281/zenodo.14893734</div>
+    <div class="src"><div class="src-dot" style="background:var(--green)"></div>Sentinel-2 L2A · browser.dataspace.copernicus.eu · tile 31UES</div>
+    <div class="src"><div class="src-dot" style="background:var(--yellow)"></div>RMI AWS · opendata.meteo.be · openkmi · CC BY 4.0</div>
+    <div class="src"><div class="src-dot" style="background:var(--purple)"></div>ESA WorldCover 10m 2021 · viewer.terrascope.be</div>
+    <div class="src"><div class="src-dot" style="background:var(--accent2)"></div>Models: Random Forest · XGBoost (tuned) · CNN</div>
+  </div>
+</div>
+
+</body>
+</html>

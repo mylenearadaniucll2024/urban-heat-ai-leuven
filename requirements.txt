@@ -9,4 +9,7 @@ geopandas
 tqdm
 jupyter
 seaborn
-rasterio
+xgboost
+plotly
+openkmi
+statsmodels

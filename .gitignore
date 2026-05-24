@@ -5,6 +5,9 @@ data/
 # *.csv
 *.gz
 
+# Credentials — never commit
+.env
+
 # Python
 __pycache__/
 *.pyc

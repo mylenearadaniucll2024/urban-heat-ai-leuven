@@ -266,7 +266,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
     <div class="card">
       <div class="card-header">
         <span class="card-title" id="mapTitle">Heat Anomaly Map · Leuven</span>
-        <span class="card-sub" id="mapScene">Scene: 2025-08-11 · B04/B08/B11 · Tiles T31UFT + T31UES · 5 cities</span>
+        <span class="card-sub" id="mapScene">Scene: 2025-08-11 · B04/B08/B11 · Copernicus 31UES · Leuven only</span>
       </div>
       <div style="padding:16px 16px 0">
         <canvas id="heatMap" width="700" height="480"></canvas>
@@ -303,17 +303,17 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
           <div class="rmse-row">
             <span class="rmse-name">RANDOM FOREST</span>
             <div class="rmse-track"><div class="rmse-fill" id="rmse-rf-bar" style="width:58%;background:var(--accent)"></div></div>
-            <span class="rmse-num" id="rmse-rf">0.437</span>
+            <span class="rmse-num" id="rmse-rf">1.11</span>
           </div>
           <div class="rmse-row">
             <span class="rmse-name">XGB (TUNED)</span>
             <div class="rmse-track"><div class="rmse-fill" id="rmse-xgb-bar" style="width:64%;background:var(--green)"></div></div>
-            <span class="rmse-num" id="rmse-xgb">0.427</span>
+            <span class="rmse-num" id="rmse-xgb">0.44</span>
           </div>
           <div class="rmse-row">
-            <span class="rmse-name">CNN · GPU</span>
+            <span class="rmse-name">CNN</span>
             <div class="rmse-track"><div class="rmse-fill" id="rmse-cnn-bar" style="width:20%;background:var(--accent2)"></div></div>
-            <span class="rmse-num" id="rmse-cnn">0.527</span>
+            <span class="rmse-num" id="rmse-cnn">0.55</span>
           </div>
         </div>
         <div class="m-sub" style="margin-top:7px">Units: °C anomaly · lower = better</div>
@@ -324,10 +324,10 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
   <div class="warn">
     <span class="warn-icon">⚠</span>
     <span class="warn-text">
-      <strong>Scope:</strong> Sentinel-2 imagery downloaded for all 5 Belgian cities across tiles <strong>T31UFT</strong> (Leuven, Liège) and <strong>T31UES</strong> (Brussels, Ghent, Antwerp). All city maps use real satellite bands. ·
+      <strong>Scope:</strong> Satellite imagery covers <strong>Leuven only</strong> (Copernicus tile 31UES). The Leuven map uses real Sentinel-2 B04/B08/B11 data. Maps for Brussels/Ghent/Antwerp/Liège are <strong>simulated</strong> from city-specific land-use profiles (real Sentinel-2 scenes for those cities were not downloaded) — use them for concept demonstration only. ·
       2024 has only 1 Sentinel-2 scene (Jul 30) — lower model confidence for 2024. ·
       Grid range narrow (−1 to +0.3°C): weather features fixed at median — see Data &amp; Methods tab for explanation. ·
-      CNN R² = 0.369 (100 epochs, Tesla T4 GPU via Google Colab). Best model: Stacked RF+XGB, R²=0.578.
+      CNN R² = 0.327 (20 epochs CPU) — expected R²≈0.45 at 100 epochs GPU.
     </span>
   </div>
 
@@ -343,7 +343,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
       <div class="yr-foot">
         <div class="yr-stat"><div class="ys-val" style="color:var(--accent2)">+1.8°C</div><div class="ys-lbl">Peak Hot</div></div>
         <div class="yr-stat"><div class="ys-val" style="color:var(--cool)">−2.1°C</div><div class="ys-lbl">Peak Cool</div></div>
-        <div class="yr-stat"><div class="ys-val">0.437</div><div class="ys-lbl">RMSE</div></div>
+        <div class="yr-stat"><div class="ys-val">1.11</div><div class="ys-lbl">RMSE</div></div>
       </div>
     </div>
     <div class="yr-card" id="card2024">
@@ -352,7 +352,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
       <div class="yr-foot">
         <div class="yr-stat"><div class="ys-val" style="color:var(--accent2)">+2.1°C</div><div class="ys-lbl">Peak Hot</div></div>
         <div class="yr-stat"><div class="ys-val" style="color:var(--cool)">−1.8°C</div><div class="ys-lbl">Peak Cool</div></div>
-        <div class="yr-stat"><div class="ys-val">0.495</div><div class="ys-lbl">RMSE ⚠</div></div>
+        <div class="yr-stat"><div class="ys-val">~1.8</div><div class="ys-lbl">RMSE ⚠</div></div>
       </div>
     </div>
     <div class="yr-card hl" id="card2025">
@@ -361,7 +361,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; h
       <div class="yr-foot">
         <div class="yr-stat"><div class="ys-val" style="color:var(--accent2)">+2.4°C</div><div class="ys-lbl">Peak Hot</div></div>
         <div class="yr-stat"><div class="ys-val" style="color:var(--cool)">−2.3°C</div><div class="ys-lbl">Peak Cool</div></div>
-        <div class="yr-stat"><div class="ys-val">0.427</div><div class="ys-lbl">RMSE</div></div>
+        <div class="yr-stat"><div class="ys-val">0.44</div><div class="ys-lbl">RMSE</div></div>
       </div>
     </div>
   </div>
@@ -529,9 +529,9 @@ const CITIES = {
 };
 
 const YEAR_DATA = {
-  2023:{ scene:'2023-08-20', rmse:{rf:0.437,xgb:0.427,cnn:0.527}, meanAnom:0.8, spike:0, peakHot:1.8, peakCool:-2.1, seed:42 },
+  2023:{ scene:'2023-08-20', rmse:{rf:1.11,xgb:0.44,cnn:0.55}, meanAnom:0.8, spike:0, peakHot:1.8, peakCool:-2.1, seed:42 },
   2024:{ scene:'2024-07-30 ⚠', rmse:{rf:1.84,xgb:1.71,cnn:3.2}, meanAnom:1.0, spike:0.2, peakHot:2.1, peakCool:-1.8, seed:77 },
-  2025:{ scene:'2025-08-11', rmse:{rf:0.437,xgb:0.427,cnn:0.527}, meanAnom:1.2, spike:0.4, peakHot:2.4, peakCool:-2.3, seed:99 },
+  2025:{ scene:'2025-08-11', rmse:{rf:1.11,xgb:0.44,cnn:0.55}, meanAnom:1.2, spike:0.4, peakHot:2.4, peakCool:-2.3, seed:99 },
 };
 
 // Simulated stations for Leuven (representative sample matching real STATIONS.csv structure)
@@ -746,7 +746,7 @@ let mainGrid=null;
 function updateHeatMap() {
   const yd=YEAR_DATA[currentYear];
   document.getElementById('mapTitle').textContent=`Heat ${currentMode==='anomaly'?'Anomaly':'Absolute'} Map · ${currentCity}`;
-  const _scopeNote = currentCity==='Leuven' ? ' · Copernicus 31UES · real Sentinel-2' : ' · real Sentinel-2 T31UES';
+  const _scopeNote = currentCity==='Leuven' ? ' · Copernicus 31UES · real Sentinel-2' : ' · simulated land-use profile';
   document.getElementById('mapScene').textContent=`Scene: ${yd.scene} · B04/B08/B11${_scopeNote}`;
   const canvas=document.getElementById('heatMap');
   canvas.width=canvas.parentElement.offsetWidth-32;
@@ -1156,9 +1156,9 @@ window.addEventListener('resize',()=>{
 <div class="panel" id="methodsPanel">
 
   <div class="scope-note">
-    ⚠ <strong>Geographic scope:</strong> Sentinel-2 imagery downloaded for all <strong>5 Belgian cities</strong>
+    ⚠ <strong>Geographic scope:</strong> Sentinel-2 imagery was downloaded for <strong>Leuven, Belgium only</strong>
     via the Copernicus Data Space Browser. The Leuven heat anomaly map uses real B04/B08/B11 reflectance data.
-    Tiles T31UFT (Leuven, Liège) and T31UES (Brussels, Ghent, Antwerp) provide real imagery for all cities
+    Maps for Brussels, Ghent, Antwerp and Liège are <strong>simulated</strong> from city-specific urban morphology profiles
     (dense blocks, park positions, canal networks) — they are conceptually correct representations, not real satellite data.
     To generate real maps for other cities: download tile 31UFS (Brussels/Liège), 31UDS (Ghent), 31UES (Antwerp) from browser.dataspace.copernicus.eu.
   </div>
@@ -1177,7 +1177,7 @@ window.addEventListener('resize',()=>{
       <div class="pipe-arrow">→</div>
       <div class="pipe-step">🌿 NDVI / NDBI<br><span style="color:var(--muted);font-size:8px">Feature engineering</span></div>
       <div class="pipe-arrow">→</div>
-      <div class="pipe-step">🤖 RF · XGB · Stacked · CNN<br><span style="color:var(--muted);font-size:8px">Train · CV · Tune</span></div>
+      <div class="pipe-step">🤖 RF · XGB · CNN<br><span style="color:var(--muted);font-size:8px">Train · CV · Tune</span></div>
       <div class="pipe-arrow">→</div>
       <div class="pipe-step" style="border-color:var(--accent);color:var(--accent)">🗺 Anomaly Map<br><span style="font-size:8px">Grid prediction</span></div>
     </div>
@@ -1313,12 +1313,11 @@ window.addEventListener('resize',()=>{
       </div>
       <table class="mc-table" style="margin-top:10px">
         <tr><th>Model</th><th>Input</th><th>CV RMSE</th><th>Test R²</th></tr>
-        <tr><td>Random Forest</td><td>7 tabular features</td><td>~0.50</td><td>0.552</td></tr>
-        <tr><td>XGBoost</td><td>7 tabular features</td><td>~0.50</td><td>0.573</td></tr>
-        <tr><td>XGB (tuned)</td><td>7 tabular features</td><td>~0.49</td><td>0.571</td></tr>
-        <tr><td><strong>Stacked RF+XGB</strong></td><td>OOF meta-learner</td><td>~0.49</td><td><strong>0.578 ★</strong></td></tr>
-        <tr><td>CNN</td><td>3×16×16 px patches</td><td>n/a</td><td>0.369*</td></tr>
-        <tr><td colspan="4" style="color:var(--muted);font-size:8px;padding-top:4px">* CNN: 100 epochs, Tesla T4 GPU (Google Colab). RMSE=0.527°C.</td></tr>
+        <tr><td>Random Forest</td><td>6 tabular features</td><td>~0.45</td><td>0.526</td></tr>
+        <tr><td>XGBoost</td><td>6 tabular features</td><td>~0.44</td><td>0.541</td></tr>
+        <tr><td>XGB (tuned)</td><td>6 tabular features</td><td>~0.44</td><td>0.552 ★</td></tr>
+        <tr><td>CNN</td><td>3×16×16 px patches</td><td>n/a</td><td>0.327*</td></tr>
+        <tr><td colspan="4" style="color:var(--muted);font-size:8px;padding-top:4px">* CNN: 20 epochs CPU. Expected R²≈0.42–0.45 at 100 epochs GPU.</td></tr>
       </table>
       <div class="mc-body" style="margin-top:10px">
         <strong>Split:</strong> 80/20 stratified by year · <strong>CV:</strong> 5-fold on training set ·
@@ -1361,11 +1360,11 @@ window.addEventListener('resize',()=>{
     <div class="mc-title"><span class="mc-icon">⚠</span> Known Limitations &amp; Mitigations</div>
     <table class="mc-table">
       <tr><th>Limitation</th><th>Severity</th><th>Mitigation</th></tr>
-      <tr><td>T31UFT + T31UES downloaded — all 5 cities have real Sentinel-2 imagery</td><td><span class="pill pill-green">DONE</span></td><td>Netatmo ground truth needed for multi-city retraining</td></tr>
+      <tr><td>Sentinel-2 covers Leuven only — no Brussels/Ghent/Antwerp/Liège imagery</td><td><span class="pill pill-red">HIGH</span></td><td>Download scene tiles 31UFS, 31UDS for other cities</td></tr>
       <tr><td>2024 has only 1 scene (Jul 30) — lower model confidence</td><td><span class="pill pill-red">HIGH</span></td><td>Acquire additional 2024 scenes via Copernicus Hub</td></tr>
       <tr><td>Flat grid map range (−1 to +0.3°C vs −4.4 to +7.78°C training)</td><td><span class="pill pill-amber">MED</span></td><td>Substitute kriged weather surfaces for median features</td></tr>
       <tr><td>Spatial autocorrelation in CV — station twins inflate R²</td><td><span class="pill pill-amber">MED</span></td><td>Use LOSOCV as primary evaluation metric</td></tr>
-      <tr><td>CNN trained — R²=0.369 at 100 epochs T4 GPU</td><td><span class="pill pill-green">DONE</span></td><td>Transfer learning (ResNet/EfficientNet) next for higher R²</td></tr>
+      <tr><td>CNN underfit — R²=0.33 at 20 epochs CPU</td><td><span class="pill pill-amber">MED</span></td><td>100 epochs on GPU → expected R²≈0.42–0.45</td></tr>
       <tr><td>B11 at 20 m vs B04/B08 at 10 m — CNN patch inconsistency</td><td><span class="pill pill-blue">LOW</span></td><td>Upsample B11 to 10 m before patch extraction</td></tr>
       <tr><td>±7 day temporal alignment between sensor and satellite</td><td><span class="pill pill-blue">LOW</span></td><td>Defensible: summer NDVI/NDBI stable over 2 weeks</td></tr>
     </table>
@@ -1377,7 +1376,7 @@ window.addEventListener('resize',()=>{
     <div class="src"><div class="src-dot" style="background:var(--green)"></div>Sentinel-2 L2A · browser.dataspace.copernicus.eu · tile 31UES</div>
     <div class="src"><div class="src-dot" style="background:var(--yellow)"></div>RMI AWS · opendata.meteo.be · openkmi · CC BY 4.0</div>
     <div class="src"><div class="src-dot" style="background:var(--purple)"></div>ESA WorldCover 10m 2021 · viewer.terrascope.be</div>
-    <div class="src"><div class="src-dot" style="background:var(--accent2)"></div>Models: RF · XGBoost (tuned) · Stacked RF+XGB (best) · CNN</div>
+    <div class="src"><div class="src-dot" style="background:var(--accent2)"></div>Models: Random Forest · XGBoost (tuned) · CNN</div>
   </div>
 </div>
 

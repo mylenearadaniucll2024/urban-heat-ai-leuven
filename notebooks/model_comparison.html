@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Urban Heat AI — Model Comparison v1 vs v2</title>
+<style>
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --surface2: #21262d;
+    --border:   #30363d;
+    --v1:       #58a6ff;
+    --v1-dim:   #1f3a5f;
+    --v2:       #3fb950;
+    --v2-dim:   #1a3a22;
+    --warn:     #f0883e;
+    --warn-dim: #3a2800;
+    --red:      #f85149;
+    --red-dim:  #3a1212;
+    --purple:   #bc8cff;
+    --purple-dim:#2a1f4a;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.65; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,17,23,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; gap: 0; overflow-x: auto;
+  }
+  nav a {
+    color: var(--muted); text-decoration: none; font-size: 13px;
+    padding: 14px 16px; white-space: nowrap; border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav a:hover { color: var(--text); border-bottom-color: var(--border); }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(160deg, #0d1117 0%, #0d2137 50%, #0d2118 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 72px 40px 56px; text-align: center; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 700px 300px at 20% 50%, rgba(88,166,255,.07) 0%, transparent 70%),
+      radial-gradient(ellipse 700px 300px at 80% 50%, rgba(63,185,80,.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(26px, 5vw, 46px); font-weight: 700; letter-spacing: -.5px; margin-bottom: 12px; background: linear-gradient(90deg, var(--v1) 0%, #a5d6ff 40%, var(--v2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { color: var(--muted); max-width: 620px; margin: 0 auto 28px; font-size: 16px; }
+  .hero-tags { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
+  .tag.green { border-color: var(--v2); color: var(--v2); background: var(--v2-dim); }
+  .tag.blue  { border-color: var(--v1); color: var(--v1); background: var(--v1-dim); }
+
+  /* LAYOUT */
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 52px 0; }
+  section + section { border-top: 1px solid var(--border); }
+  h2 { font-size: 22px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .section-sub { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+
+  /* VS HEADER */
+  .vs-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; margin-bottom: 24px; }
+  .vs-label { border-radius: 10px; padding: 16px 20px; font-weight: 700; font-size: 17px; }
+  .vs-label.v1 { background: linear-gradient(135deg,#1f3a5f,#0d2137); border: 1px solid var(--v1); color: var(--v1); }
+  .vs-label.v2 { background: linear-gradient(135deg,#1a3a22,#0d2118); border: 1px solid var(--v2); color: var(--v2); text-align: right; }
+  .vs-label small { display: block; font-size: 11px; font-weight: 400; opacity: .7; margin-top: 2px; }
+  .vs-divider { font-size: 28px; font-weight: 900; color: var(--muted); text-align: center; }
+
+  /* METRIC CARDS */
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; }
+  .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--v2); }
+  .metric-card.v1::before { background: var(--v1); }
+  .metric-card.warn::before { background: var(--warn); }
+  .metric-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 8px; }
+  .metric-card .value { font-size: 26px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .metric-card .value.blue { color: var(--v1); }
+  .metric-card .value.green { color: var(--v2); }
+  .metric-card .value.warn { color: var(--warn); }
+  .delta { font-size: 12px; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+  .delta.better  { background: var(--v2-dim); color: var(--v2); }
+  .delta.worse   { background: var(--red-dim); color: var(--red); }
+  .delta.neutral { background: var(--surface2); color: var(--muted); }
+  .delta.info    { background: var(--v1-dim); color: var(--v1); }
+
+  /* TABLES */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: var(--surface2); }
+  thead th { padding: 12px 16px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--border); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 12px 16px; }
+  .best-row td { background: #1a3a22 !important; }
+  .best-row td:first-child { border-left: 3px solid var(--v2); padding-left: 13px; }
+  .v1-row td { background: #111c2a; }
+  .v1-row td:first-child { border-left: 3px solid var(--v1); padding-left: 13px; }
+  .warn-row td { background: var(--warn-dim); }
+  .model-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .num { font-variant-numeric: tabular-nums; font-family: 'Consolas', monospace; }
+  .r2-bar { height: 6px; border-radius: 3px; flex: 1; min-width: 60px; background: var(--surface2); }
+  .r2-bar-fill { height: 100%; border-radius: 3px; }
+  .r2-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .badge { border-radius: 4px; font-size: 10px; padding: 1px 6px; font-weight: 700; letter-spacing: .3px; display: inline-block; }
+  .badge.new    { background: var(--v2-dim); color: var(--v2); border: 1px solid var(--v2); }
+  .badge.fix    { background: var(--warn-dim); color: var(--warn); border: 1px solid var(--warn); }
+  .badge.best   { background: var(--v2-dim); color: var(--v2); border: 1px solid var(--v2); }
+  .badge.bestv1 { background: var(--v1-dim); color: var(--v1); border: 1px solid var(--v1); }
+  .badge.drop   { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .badge.purple { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple); }
+  .badge.gpu    { background: #2a1f00; color: #ffa500; border: 1px solid #ffa500; }
+
+  /* DIFF GRID */
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .diff-grid { grid-template-columns: 1fr; } }
+  .diff-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .diff-card h4 { font-size: 12px; font-weight: 600; margin-bottom: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+  .diff-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .diff-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .diff-icon { font-size: 15px; flex-shrink: 0; margin-top: 2px; }
+  .diff-text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .diff-text span { color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+  /* PIPELINE */
+  .pipeline { display: flex; flex-direction: column; gap: 0; }
+  .pipeline-step {
+    display: grid; grid-template-columns: 160px 1fr;
+    border-left: 2px solid var(--border); margin-left: 80px;
+    position: relative;
+  }
+  .pipeline-step::before {
+    content: ''; position: absolute;
+    left: -7px; top: 18px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface2); border: 2px solid var(--border);
+  }
+  .pipeline-step.active::before { background: var(--v2); border-color: var(--v2); }
+  .pipeline-step.warn::before   { background: var(--warn); border-color: var(--warn); }
+  .pipeline-label { text-align: right; padding: 14px 20px 14px 0; font-size: 11px; color: var(--muted); font-family: monospace; font-weight: 600; margin-left: -162px; width: 162px; }
+  .pipeline-body  { padding: 14px 0 14px 24px; }
+  .pipeline-body strong { font-size: 14px; display: block; margin-bottom: 4px; }
+  .pipeline-body p { font-size: 13px; color: var(--muted); }
+
+  /* CODE BLOCK */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 13px;
+    font-family: 'Consolas', monospace;
+    overflow-x: auto;
+    line-height: 1.7;
+    color: #e6edf3;
+  }
+  code { font-family: 'Consolas', monospace; font-size: 13px; background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+  .kw { color: #ff7b72; } /* keyword */
+  .cm { color: #8b949e; font-style: italic; } /* comment */
+  .st { color: #a5d6ff; } /* string */
+  .fn { color: #d2a8ff; } /* function */
+  .nm { color: #79c0ff; } /* name */
+  .nu { color: #f0883e; } /* number */
+
+  /* CALLOUT BOXES */
+  .callout { border-radius: 8px; padding: 16px 20px; margin: 16px 0; font-size: 14px; border-left: 4px solid; }
+  .callout.green { background: var(--v2-dim); border-color: var(--v2); }
+  .callout.blue  { background: var(--v1-dim); border-color: var(--v1); }
+  .callout.warn  { background: var(--warn-dim); border-color: var(--warn); }
+  .callout.red   { background: var(--red-dim);  border-color: var(--red); }
+  .callout.purple{ background: var(--purple-dim); border-color: var(--purple); }
+  .callout strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+  /* ROADMAP */
+  .roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .roadmap-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .roadmap-card .priority { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+  .roadmap-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .roadmap-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .priority.high   { color: var(--v2); }
+  .priority.medium { color: var(--warn); }
+  .priority.low    { color: var(--purple); }
+
+  /* CHANGELOG */
+  .changelog { display: flex; flex-direction: column; }
+  .cl-item { display: grid; grid-template-columns: 120px 1fr; gap: 0 20px; position: relative; }
+  .cl-item::before { content: ''; position: absolute; left: 119px; top: 0; bottom: 0; width: 1px; background: var(--border); }
+  .cl-item:last-child::before { bottom: 50%; }
+  .cl-date { text-align: right; padding: 18px 0; font-size: 12px; color: var(--muted); font-family: monospace; }
+  .cl-body { padding: 14px 0 14px 24px; position: relative; }
+  .cl-body::before { content: ''; position: absolute; left: -5px; top: 20px; width: 10px; height: 10px; border-radius: 50%; background: var(--border); border: 2px solid var(--bg); }
+  .cl-item.hl .cl-body::before  { background: var(--v2); }
+  .cl-item.fix .cl-body::before { background: var(--warn); }
+  .cl-item.rd .cl-body::before  { background: var(--red); }
+  .cl-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .cl-desc  { color: var(--muted); font-size: 13px; }
+
+  /* SUMMARY BANNER */
+  .summary-banner { background: linear-gradient(135deg, var(--v2-dim), #0a2a14); border: 1px solid var(--v2); border-radius: 12px; padding: 28px 32px; display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; margin-top: 32px; }
+  .summary-banner h3 { font-size: 18px; color: var(--v2); margin-bottom: 8px; }
+  .summary-banner p  { color: var(--muted); font-size: 14px; max-width: 640px; }
+  .summary-stat { text-align: center; min-width: 100px; }
+  .summary-stat .big { font-size: 40px; font-weight: 800; color: var(--v2); line-height: 1; }
+  .summary-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px; text-align: center; color: var(--muted); font-size: 12px; }
+  footer a { color: var(--v1); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#metrics">Metrics</a>
+  <a href="#models">All Models</a>
+  <a href="#changes">What Changed</a>
+  <a href="#features">Feature Selection</a>
+  <a href="#pipeline">Data Pipeline</a>
+  <a href="#groundtruth">Ground Truth</a>
+  <a href="#multicityplan">Multi-City Roadmap</a>
+  <a href="#gpu">GPU Fix</a>
+  <a href="#yearbyyear">Per-Year</a>
+  <a href="#roadmap">Future Improvements</a>
+  <a href="#changelog">Changelog</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Urban Heat AI · UCLL Bachelor Advanced AI 2025</div>
+  <h1>Model Comparison: v1 → v2</h1>
+  <p>Full breakdown of feature engineering decisions, methodology fixes, multi-city expansion, GPU setup, and the roadmap to v3.</p>
+  <div class="hero-tags">
+    <span class="tag blue">v1 · XGBoost (tuned) · R² 0.552</span>
+    <span class="tag">→</span>
+    <span class="tag green">v2 · Stacked RF+XGB · R² 0.578</span>
+    <span class="tag">Sentinel-2 T31UFT + T31UES</span>
+    <span class="tag">5 Belgian cities</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════ METRICS -->
+<section id="metrics">
+  <h2>📊 Top-Line Metrics</h2>
+  <p class="section-sub">Best model per version on the held-out 20% test split, stratified by year.</p>
+
+  <div class="vs-header">
+    <div class="vs-label v1">v1 — XGBoost (tuned)<small>heat_monitoring_intelligence copy.ipynb</small></div>
+    <div class="vs-divider">VS</div>
+    <div class="vs-label v2">v2 — Stacked RF+XGB<small>heat_monitoring_intelligence.ipynb</small></div>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric-card v1"><div class="label">RMSE (°C) · v1</div><div class="value blue">0.440</div><div class="delta worse">improved → 0.427 in v2</div></div>
+    <div class="metric-card v1"><div class="label">MAE (°C) · v1</div><div class="value blue">0.268</div><div class="delta worse">improved → 0.261 in v2</div></div>
+    <div class="metric-card v1"><div class="label">R² · v1</div><div class="value blue">0.552</div><div class="delta worse">improved → 0.578 in v2</div></div>
+    <div class="metric-card v1"><div class="label">CV RMSE · v1</div><div class="value blue">0.508</div><div class="delta worse">improved → 0.492 in v2</div></div>
+    <div class="metric-card"><div class="label">RMSE (°C) · v2</div><div class="value green">0.427</div><div class="delta better">−0.013°C vs v1</div></div>
+    <div class="metric-card"><div class="label">MAE (°C) · v2</div><div class="value green">0.261</div><div class="delta better">−0.007°C vs v1</div></div>
+    <div class="metric-card"><div class="label">R² · v2</div><div class="value green">0.578</div><div class="delta better">+0.026 over v1</div></div>
+    <div class="metric-card"><div class="label">LOSOCV RMSE · v2</div><div class="value green">0.592</div><div class="delta better">was 0.604 in v1</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ ALL MODELS -->
+<section id="models">
+  <h2>🏆 All Models — Side by Side</h2>
+  <p class="section-sub">Every model trained in both versions, on the same 80/20 stratified split.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Model</th><th>Ver</th><th>RMSE</th><th>MAE</th><th>R²</th><th>CV RMSE</th><th>R² bar</th></tr></thead>
+      <tbody>
+        <tr class="v1-row"><td><span class="model-badge"><span class="dot" style="background:#58a6ff"></span>Random Forest</span></td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4528</td><td class="num">0.2736</td><td class="num">0.5258</td><td class="num">0.5142</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:52.6%;background:var(--v1)"></div></div></td></tr>
+        <tr class="v1-row"><td><span class="model-badge"><span class="dot" style="background:#79c0ff"></span>XGBoost</span></td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4452</td><td class="num">0.2693</td><td class="num">0.5414</td><td class="num">0.5081</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:54.1%;background:var(--v1)"></div></div></td></tr>
+        <tr class="v1-row"><td><span class="model-badge"><span class="dot" style="background:#a5d6ff"></span>XGBoost (tuned) <span class="badge bestv1" style="margin-left:4px">best v1</span></span></td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4402</td><td class="num">0.2684</td><td class="num">0.5517</td><td class="num">0.5083</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:55.2%;background:var(--v1)"></div></div></td></tr>
+        <tr class="v1-row"><td><span class="model-badge"><span class="dot" style="background:#6e7681"></span>CNN (20 epochs, CPU)</span></td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.5436</td><td class="num">0.3234</td><td class="num">0.3297</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:33%;background:#444c56"></div></div></td></tr>
+        <tr><td colspan="7" style="padding:3px;background:var(--bg)"></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#56d364"></span>Random Forest</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4403</td><td class="num">0.2700</td><td class="num">0.5516</td><td class="num">0.5027</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:55.2%;background:var(--v2)"></div></div></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#7ee787"></span>XGBoost</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4297</td><td class="num">0.2651</td><td class="num">0.5728</td><td class="num">0.5019</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:57.3%;background:var(--v2)"></div></div></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#aff5b4"></span>XGBoost (tuned)</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4306</td><td class="num">0.2630</td><td class="num">0.5711</td><td class="num">0.4916</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:57.1%;background:var(--v2)"></div></div></td></tr>
+        <tr class="best-row"><td><span class="model-badge"><span class="dot" style="background:#3fb950"></span>Stacked RF+XGB <span class="badge new" style="margin-left:4px">NEW</span> <span class="badge best" style="margin-left:4px">best v2</span></span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num" style="color:var(--v2);font-weight:700">0.4270</td><td class="num" style="color:var(--v2);font-weight:700">0.2613</td><td class="num" style="color:var(--v2);font-weight:700">0.5782</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:57.8%;background:#3fb950"></div></div></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#8b949e"></span>CNN (20 epochs, CPU) <span class="badge gpu" style="margin-left:4px">100ep · T4 GPU</span></span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.5273</td><td class="num">0.3099</td><td class="num">0.3691</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:36.9%;background:#444c56"></div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout blue" style="margin-top:20px">
+    <strong>Why is R² only ~0.58?</strong>
+    5 575 rows after scene-matching is small for ML. Only NDVI/NDBI/B11 vary spatially — weather features (humidity, wind, solar) are station-level medians, not interpolated surfaces. The ∼0.09°C LOSOCV gap reflects structural spatial autocorrelation in the dense Leuven.cool network. With more cities + kriged weather surfaces, R² 0.65–0.75 is realistic.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ WHAT CHANGED -->
+<section id="changes">
+  <h2>🔧 What Changed — v1 → v2</h2>
+  <p class="section-sub">Two methodology fixes eliminate leakage; one new feature; one new ensemble architecture; five-city coverage.</p>
+  <div class="diff-grid">
+    <div class="diff-card">
+      <h4>🐛 Bug Fixes (methodology)</h4>
+      <div class="diff-item"><span class="diff-icon">🔴</span><div class="diff-text"><strong>StandardScaler data leakage — fixed</strong><span>v1: <code>scaler.fit_transform(all_data)</code> before split. The scaler saw the test set's mean/std, inflating evaluation metrics. v2: <code>scaler.fit(X_train)</code>, then <code>scaler.transform(X_test)</code>.</span></div></div>
+      <div class="diff-item"><span class="diff-icon">🔴</span><div class="diff-text"><strong>LOSOCV per-fold scaler — fixed</strong><span>v1 reused the global scaler inside each LOSOCV fold, leaking the held-out station's stats into training. v2 fits a fresh scaler per fold. LOSOCV RMSE: 0.604 → 0.592.</span></div></div>
+    </div>
+    <div class="diff-card">
+      <h4>✨ New Feature & Architecture</h4>
+      <div class="diff-item"><span class="diff-icon">🟢</span><div class="diff-text"><strong>B11 (SWIR) — 7th feature added</strong><span>Raw SWIR captures absolute thermal inertia. NDBI normalises it away (dense urban ÷ value). B11 raw keeps the scale, letting the model distinguish high-density impervious from sparse impervious at the same NDBI ratio.</span></div></div>
+      <div class="diff-item"><span class="diff-icon">🟢</span><div class="diff-text"><strong>Stacked ensemble: Ridge meta-learner</strong><span>OOF predictions from RF + XGBoost → Ridge. Weights: RF 0.365, XGB 0.685. OOF generation prevents leakage into the meta-learner. +0.007 R² over tuned XGBoost alone.</span></div></div>
+    </div>
+    <div class="diff-card">
+      <h4>📐 Feature Set Summary</h4>
+      <div class="diff-item"><span class="diff-icon">—</span><div class="diff-text"><strong>v1 features (6)</strong><span>NDVI · NDBI · HUMIDITY · ALTITUDE · wind_ms · SOLARRADIATION</span></div></div>
+      <div class="diff-item"><span class="diff-icon">✅</span><div class="diff-text"><strong>v2 features (7)</strong><span>NDVI · NDBI · <strong style="color:var(--v2)">B11</strong> · HUMIDITY · ALTITUDE · wind_ms · SOLARRADIATION</span></div></div>
+    </div>
+    <div class="diff-card">
+      <h4>🗺️ Geographic Coverage</h4>
+      <div class="diff-item"><span class="diff-icon">—</span><div class="diff-text"><strong>v1: 1 city (Leuven only)</strong><span>T31UFT tile · Leuven.cool ground truth</span></div></div>
+      <div class="diff-item"><span class="diff-icon">✅</span><div class="diff-text"><strong>v2: 5 Belgian cities (inference)</strong><span>T31UFT (Leuven, Liège) + T31UES (Brussels, Ghent, Antwerp). Zero-shot spatial transfer via NDVI/NDBI/B11.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ FEATURE SELECTION -->
+<section id="features">
+  <h2>🔬 Feature Selection — How We Chose What to Keep</h2>
+  <p class="section-sub">Every candidate feature was assessed against three criteria: physical plausibility, data availability at sensor resolution, and correlation with UHI anomaly.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Feature</th><th>Source</th><th>Decision</th><th>Physical Reason</th></tr></thead>
+      <tbody>
+        <tr><td><strong>NDVI</strong><br><span style="font-size:12px;color:var(--muted)">(B08−B04)/(B08+B04)</span></td><td>Sentinel-2</td><td><span class="badge best">KEPT</span></td><td>Vegetation reduces UHI via evapotranspiration and shading. Strong negative correlation with anomaly (parks cool, bare soil/concrete hot).</td></tr>
+        <tr><td><strong>NDBI</strong><br><span style="font-size:12px;color:var(--muted)">(B11−B08)/(B11+B08)</span></td><td>Sentinel-2</td><td><span class="badge best">KEPT</span></td><td>Built-up index. Positive correlation with UHI — concrete and asphalt absorb and re-emit solar radiation. Normalised ratio strips absolute SWIR magnitude.</td></tr>
+        <tr><td><strong>B11 (SWIR raw)</strong><br><span style="font-size:12px;color:var(--muted)">Band 11, 20 m</span></td><td>Sentinel-2</td><td><span class="badge new">ADDED v2</span></td><td>Absolute Short-Wave Infrared reflectance. Dense urban cores (high building density, contiguous impervious cover) have higher B11 than sparse suburban at the same NDBI value. Restores signal compressed by normalisation.</td></tr>
+        <tr><td><strong>HUMIDITY</strong></td><td>RMI / Leuven.cool</td><td><span class="badge best">KEPT</span></td><td>Evaporative cooling effect. High humidity suppresses surface temperature gain; dry conditions amplify UHI. Station-level variable.</td></tr>
+        <tr><td><strong>ALTITUDE</strong></td><td>DEM (station metadata)</td><td><span class="badge best">KEPT</span></td><td>Lapse rate ≈ 0.65°C per 100 m. Leuven's elevation range (10–90 m) produces up to 0.5°C systematic offset without this feature.</td></tr>
+        <tr><td><strong>wind_ms</strong></td><td>RMI / Leuven.cool</td><td><span class="badge best">KEPT</span></td><td>Wind ventilates urban canyons and disperses heat plumes. Strong negative UHI correlation in calm conditions (summer anticyclone).</td></tr>
+        <tr><td><strong>SOLARRADIATION</strong></td><td>RMI / Leuven.cool</td><td><span class="badge best">KEPT</span></td><td>Incoming shortwave drives surface heating. Correlates with anomaly magnitude on clear-sky summer days (all training scenes are low-cloud &lt;20%).</td></tr>
+        <tr class="warn-row"><td><strong>B04, B08 raw</strong></td><td>Sentinel-2</td><td><span class="badge drop">DROPPED</span></td><td>Redundant once NDVI is computed. Including raw bands alongside the ratio adds collinear features with no new information. Kept only in CNN image patches where spatial context matters.</td></tr>
+        <tr class="warn-row"><td><strong>B12 (SWIR-2)</strong></td><td>Sentinel-2</td><td><span class="badge drop">DROPPED</span></td><td>Pearson ρ(B11, B12) &gt; 0.95 on summer scenes. Highly collinear with B11. Adding both increases noise without adding signal; B11 preferred (used in NDBI formula).</td></tr>
+        <tr class="warn-row"><td><strong>NDWI</strong><br><span style="font-size:12px;color:var(--muted)">(B03−B08)/(B03+B08)</span></td><td>Sentinel-2</td><td><span class="badge drop">DROPPED</span></td><td>Water index has near-zero values everywhere except the Dijle river, which covers &lt;0.5% of the grid. Adds noise for 99.5% of pixels.</td></tr>
+        <tr class="warn-row"><td><strong>LST (thermal)</strong></td><td>Landsat 8/9</td><td><span class="badge drop">NOT USED</span></td><td>Land Surface Temperature from Landsat thermal band (Band 10, 30 m) would be ideal, but introduces a second satellite with different overpass times and resolution mismatch. Temporal alignment with Sentinel-2 scenes is complex. Candidate for v3.</td></tr>
+        <tr class="warn-row"><td><strong>Building height / DSM</strong></td><td>NGI Belgium</td><td><span class="badge drop">NOT USED</span></td><td>Physically motivated (street canyon effect, sky-view factor), but requires preprocessing Belgium's Digital Surface Model from NGI at sensor resolution. Candidate for v3.</td></tr>
+        <tr class="warn-row"><td><strong>Population density</strong></td><td>Statbel / Eurostat</td><td><span class="badge drop">NOT USED</span></td><td>Available at 1 km² resolution — too coarse for 10 m Sentinel-2 pixels. Would average out the spatial signal the model needs.</td></tr>
+        <tr class="warn-row"><td><strong>PRESSURE</strong></td><td>RMI</td><td><span class="badge drop">DROPPED</span></td><td>Near-constant during summer high-pressure episodes (all training scenes are fair-weather). Near-zero variance → near-zero feature importance.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout green" style="margin-top:20px">
+    <strong>Why only satellite + station features, not full spatial layers?</strong>
+    The Leuven.cool dataset gives point-level sensor readings. Spatial raster features (building height, road density, DSM) are useful only if they can be matched to each sensor's exact GPS coordinate — which requires reliable geocoding of ∼600 station IDs. That pre-processing step is left for v3.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ DATA PIPELINE -->
+<section id="pipeline">
+  <h2>⚙️ Data Pipeline — From Raw to Trained Model</h2>
+  <p class="section-sub">End-to-end flow from satellite download to deployed predictor, including where the train/test split happens and how retraining works.</p>
+
+  <div class="pipeline">
+    <div class="pipeline-step active">
+      <div class="pipeline-label">Download</div>
+      <div class="pipeline-body">
+        <strong>Raw data acquisition</strong>
+        <p>Copernicus OData API → JP2 rasters (B04, B08, B11) per scene date.<br>Leuven.cool Zenodo CSVs (Q3 per year) → sensor readings with GPS, temperature, humidity.<br>RMI openkmi API → daily city averages for anomaly baseline.</p>
+      </div>
+    </div>
+    <div class="pipeline-step active">
+      <div class="pipeline-label">Feature Extraction</div>
+      <div class="pipeline-body">
+        <strong>Sentinel-2 → pixel values at sensor coordinates</strong>
+        <p><code>sample_band_at_coords(jp2, lats, lons)</code> using rasterio + pyproj.<br>NDVI = (B08−B04)/(B08+B04) · NDBI = (B11−B08)/(B11+B08) · B11 raw.<br>Scene window: ±7 days around each acquisition date.</p>
+      </div>
+    </div>
+    <div class="pipeline-step active">
+      <div class="pipeline-label">Anomaly Computation</div>
+      <div class="pipeline-body">
+        <strong>temp_anomaly = temp_c − city_daily_mean</strong>
+        <p>City daily mean computed from all Leuven.cool stations for that calendar date.<br>This removes absolute temperature (driven by weather) and isolates the spatial UHI signal.</p>
+      </div>
+    </div>
+    <div class="pipeline-step active">
+      <div class="pipeline-label">Merge & Filter</div>
+      <div class="pipeline-body">
+        <strong>30 894 890 rows → 5 575 ML rows</strong>
+        <p>Spatial join: match each sensor reading to its closest Sentinel-2 scene within the ±7-day window.<br>Drop rows where any feature is NaN (cloud mask, missing sensor readings).<br>Result: one row per (station × scene date) with 7 features + anomaly.</p>
+      </div>
+    </div>
+    <div class="pipeline-step warn">
+      <div class="pipeline-label">Train / Test Split</div>
+      <div class="pipeline-body">
+        <strong>80/20 stratified by year (StratifiedShuffleSplit)</strong>
+        <p>Train: 4 460 rows (2023, 2024, 2025 proportionally) · Test: 1 115 rows.<br><strong style="color:var(--warn)">Key fix in v2:</strong> StandardScaler fitted on train rows only, then applied to test.<br>All reported metrics (RMSE, MAE, R²) come from the held-out test set.</p>
+      </div>
+    </div>
+    <div class="pipeline-step active">
+      <div class="pipeline-label">Train Models</div>
+      <div class="pipeline-body">
+        <strong>RF · XGBoost · CNN · Stacked ensemble</strong>
+        <p>5-fold CV for standard RMSE · Leave-One-Station-Out CV for spatial robustness.<br>Stacked ensemble: OOF predictions (no leakage) → Ridge meta-learner → final model.</p>
+      </div>
+    </div>
+    <div class="pipeline-step active">
+      <div class="pipeline-label">Evaluate</div>
+      <div class="pipeline-body">
+        <strong>Test set · Per-year breakdown · LOSOCV</strong>
+        <p>Final scores reported on the held-out 20%. Per-year table shows 2024 penalty (1 scene).<br>LOSOCV gap (+0.089°C) quantifies spatial autocorrelation in the sensor network.</p>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-label">Deployment Retrain</div>
+      <div class="pipeline-body">
+        <strong>Retrain on 100% of data before deployment</strong>
+        <p>Once metrics are accepted, refit the stacked ensemble on all 5 575 rows (no test split).<br>The test-set evaluation already confirmed generalisation — retraining on full data maximises signal.<br>Retrained model → <code>anomaly_engine.py</code> → FastAPI / Streamlit dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ GROUND TRUTH -->
+<section id="groundtruth">
+  <h2>📡 Ground Truth Data — Are There Equivalents for Other Cities?</h2>
+  <p class="section-sub">Leuven.cool gives 30M rows of dense citizen-science temperature readings. The other 4 cities don't have an equivalent — but there are alternatives.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>City</th><th>Tile</th><th>Dense sensor network</th><th>Best available alternative</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr class="best-row"><td><strong>Leuven</strong></td><td>T31UFT</td><td style="color:var(--v2)">✓ Leuven.cool (Zenodo)<br><span style="font-size:12px">~600 stations, 30M rows/year</span></td><td>Already used as training data</td><td><span class="badge best">Training data ✓</span></td></tr>
+        <tr><td><strong>Liège</strong></td><td>T31UFT</td><td style="color:var(--red)">✗ None public</td><td>Netatmo public API (fetch_netatmo.py already coded) · ULiège research stations</td><td><span class="badge fix">Netatmo only</span></td></tr>
+        <tr><td><strong>Brussels</strong></td><td>T31UES</td><td style="color:var(--red)">✗ None public</td><td>Netatmo API · IBGE/BIM open data · RMI professional stations (~5 in region)</td><td><span class="badge fix">Netatmo only</span></td></tr>
+        <tr><td><strong>Ghent</strong></td><td>T31UES</td><td style="color:var(--red)">✗ None public</td><td>Netatmo API · Stad Gent open data platform</td><td><span class="badge fix">Netatmo only</span></td></tr>
+        <tr><td><strong>Antwerp</strong></td><td>T31UES</td><td style="color:var(--red)">✗ None public</td><td>Netatmo API · Stad Antwerpen open data · Antwerp Pulse IoT project</td><td><span class="badge fix">Netatmo only</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn" style="margin-top:20px">
+    <strong>⚠️ Netatmo is noisy but usable</strong>
+    Netatmo stations are consumer weather stations in private gardens, balconies, and rooftops — not professionally calibrated. The <code>fetch_netatmo.py</code> script already includes outlier filtering (−10°C to +50°C plausibility gate). Key steps before using as training data: (1) compute city_daily_mean from Netatmo itself, (2) filter outlier stations (&gt;3σ from city mean), (3) require ≥3 readings per station per day. Even noisy Netatmo data can add hundreds of ground-truth points per city per scene date.
+  </div>
+
+  <div class="callout blue" style="margin-top:12px">
+    <strong>How to run the Netatmo fetcher</strong>
+    Register a free app at <code>dev.netatmo.com</code>, add <code>NETATMO_CLIENT_ID</code> and <code>NETATMO_CLIENT_SECRET</code> to <code>.env</code>, then run:<br><br>
+    <code>python scripts/fetch_netatmo.py</code><br><br>
+    This writes <code>data/raw/netatmo/&lt;city&gt;/sensors_YYYY-MM-DD.csv</code> — one row per public station, with latitude, longitude, temperature_c, humidity, timestamp.
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ MULTI-CITY ROADMAP -->
+<section id="multicityplan">
+  <h2>🗺️ What's Next — Multi-City Training Plan</h2>
+  <p class="section-sub">T31UES data (Brussels, Ghent, Antwerp) is already downloaded. The current model uses it only for inference. Here's the path to genuinely multi-city training.</p>
+
+  <div class="diff-grid">
+    <div class="diff-card">
+      <h4>Current State (v2)</h4>
+      <div class="diff-item"><span class="diff-icon">✅</span><div class="diff-text"><strong>Training</strong><span>Leuven.cool only — 5 575 rows from T31UFT scenes</span></div></div>
+      <div class="diff-item"><span class="diff-icon">✅</span><div class="diff-text"><strong>Inference</strong><span>Zero-shot transfer to T31UES cities (Brussels, Ghent, Antwerp, Liège)</span></div></div>
+      <div class="diff-item"><span class="diff-icon">⚠️</span><div class="diff-text"><strong>Limitation</strong><span>Model was never exposed to Brussels/Antwerp/Ghent UHI patterns during training — generalisation is assumed, not validated</span></div></div>
+    </div>
+    <div class="diff-card">
+      <h4>Target State (v3)</h4>
+      <div class="diff-item"><span class="diff-icon">🎯</span><div class="diff-text"><strong>Training</strong><span>Leuven.cool + Netatmo (all 5 cities) → multi-city dataset</span></div></div>
+      <div class="diff-item"><span class="diff-icon">🎯</span><div class="diff-text"><strong>Validation</strong><span>Leave-One-City-Out CV: train on 4, test on 5th city — measures true cross-city generalisation</span></div></div>
+      <div class="diff-item"><span class="diff-icon">🎯</span><div class="diff-text"><strong>Benefit</strong><span>Model learns Brussels's wide boulevards vs Ghent's medieval core vs Antwerp's port industrial zones</span></div></div>
+    </div>
+  </div>
+
+  <br>
+  <h3 style="font-size:16px;margin-bottom:16px">Step-by-step to v3 multi-city training:</h3>
+  <div class="pipeline">
+    <div class="pipeline-step active"><div class="pipeline-label">Step 1 ✓ done</div><div class="pipeline-body"><strong>Download T31UES Sentinel-2 scenes</strong><p>Brussels, Ghent, Antwerp scenes downloaded: 2023-08-10, 2023-08-20, 2024-07-30, 2025-07-01, 2025-08-12.</p></div></div>
+    <div class="pipeline-step warn"><div class="pipeline-label">Step 2</div><div class="pipeline-body"><strong>Fetch Netatmo ground truth for all 5 cities</strong><p>Run <code>python scripts/fetch_netatmo.py</code> on scene dates. Target: ≥50 validated stations per city per scene date.</p></div></div>
+    <div class="pipeline-step warn"><div class="pipeline-label">Step 3</div><div class="pipeline-body"><strong>Compute city-specific anomalies</strong><p>Each city uses its own daily mean baseline (not Leuven's). temp_anomaly = temp_c − this_city_daily_mean. This makes anomalies comparable across cities.</p></div></div>
+    <div class="pipeline-step warn"><div class="pipeline-label">Step 4</div><div class="pipeline-body"><strong>Extract satellite features at Netatmo coordinates</strong><p>Same <code>sample_band_at_coords()</code> pipeline, but pointing at T31UES JP2 files for Brussels/Ghent/Antwerp and T31UFT for Leuven/Liège.</p></div></div>
+    <div class="pipeline-step warn"><div class="pipeline-label">Step 5</div><div class="pipeline-body"><strong>Add city_id as a categorical feature</strong><p>One-hot encode city (or use an ordinal). Lets the model learn that Brussels's baselines differ from Leuven's without conflating spatial patterns.</p></div></div>
+    <div class="pipeline-step warn"><div class="pipeline-label">Step 6</div><div class="pipeline-body"><strong>Leave-One-City-Out CV</strong><p>Train on {Leuven, Brussels, Ghent, Antwerp}, test on Liège. Repeat for each city. This is the gold standard for transfer validation.</p></div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ GPU FIX -->
+<section id="gpu">
+  <h2>⚡ GPU Setup — CNN Is Running on CPU (Fix This Now)</h2>
+  <p class="section-sub">PyTorch <code>2.11.0+cpu</code> is installed — the CPU-only build. The GPU exists but PyTorch can't see it. 20 epochs on CPU takes ~8 minutes; on GPU it takes ~25 seconds.</p>
+
+  <div class="callout red">
+    <strong>Root cause: wrong PyTorch build</strong>
+    Running <code>torch.cuda.is_available()</code> returns <code>False</code> and <code>torch.version.cuda</code> is <code>None</code>. The <code>+cpu</code> suffix in the version means CUDA support was stripped at build time. Re-installing with the CUDA build fixes it.
+  </div>
+
+  <h3 style="font-size:15px;margin:20px 0 12px">Fix in 3 steps:</h3>
+
+  <p style="margin-bottom:8px;color:var(--muted);font-size:13px"><strong style="color:var(--text)">Step 1 —</strong> Check your GPU and CUDA version. Open a terminal (not VS Code, just Windows Terminal) and run:</p>
+  <pre><span class="nm">nvidia-smi</span></pre>
+  <p style="margin:8px 0 16px;color:var(--muted);font-size:13px">Look at the top-right corner of the output — it says something like <code>CUDA Version: 12.1</code>. Use that number in step 2.</p>
+
+  <p style="margin-bottom:8px;color:var(--muted);font-size:13px"><strong style="color:var(--text)">Step 2 —</strong> Uninstall the CPU build, reinstall with CUDA:</p>
+  <pre><span class="cm"># activate the project venv first</span>
+.venv\Scripts\activate
+
+<span class="cm"># uninstall current CPU build</span>
+pip uninstall torch torchvision torchaudio -y
+
+<span class="cm"># install CUDA 12.1 build (most common for RTX 20xx/30xx/40xx)</span>
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+<span class="cm"># if your nvidia-smi says CUDA 11.8 instead, use cu118:</span>
+<span class="cm"># pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118</span></pre>
+
+  <p style="margin:16px 0 8px;color:var(--muted);font-size:13px"><strong style="color:var(--text)">Step 3 —</strong> Verify in the notebook:</p>
+  <pre><span class="kw">import</span> torch
+<span class="fn">print</span>(torch.cuda.is_available())   <span class="cm"># should print: True</span>
+<span class="fn">print</span>(torch.cuda.get_device_name(<span class="nu">0</span>)) <span class="cm"># your GPU name</span></pre>
+
+  <div class="callout green" style="margin-top:16px">
+    <strong>Once GPU works — bump CNN from 20 to 100 epochs</strong>
+    100 epochs on a Tesla T4 (Google Colab) completed. Final CNN: RMSE 0.5273, MAE 0.3099, R² 0.3691. Loss curve (0.501 → 0.369) was still declining at epoch 20 — the extra 80 epochs confirmed the trend. A dedicated <code>colab_cnn_gpu.ipynb</code> notebook handles upload from Drive and saves weights back as <code>cnn_model_100ep.pt</code>.
+  </div>
+
+  <div class="callout blue" style="margin-top:12px">
+    <strong>XGBoost can also use the GPU</strong>
+    In the XGBoost model cell, add one parameter:<br><br>
+    <code>xgb.XGBRegressor(..., device='cuda', tree_method='hist')</code><br><br>
+    This speeds up training ~5–10× and enables the RandomizedSearchCV to try more candidates in the same time.
+  </div>
+
+  <div class="metric-grid" style="margin-top:24px">
+    <div class="metric-card warn"><div class="label">CNN · CPU · 20 epochs</div><div class="value warn">~8 min</div><div class="delta neutral">current situation</div></div>
+    <div class="metric-card"><div class="label">CNN · GPU · 20 epochs</div><div class="value green">~25 sec</div><div class="delta better">after fix</div></div>
+    <div class="metric-card"><div class="label">CNN · GPU · 100 epochs</div><div class="value green">~2 min</div><div class="delta better">R² 0.3691 · done</div></div>
+    <div class="metric-card v1"><div class="label">CNN · CPU · 100 epochs</div><div class="value blue">~40 min</div><div class="delta worse">impractical on CPU</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ PER-YEAR -->
+<section id="yearbyyear">
+  <h2>📅 Per-Year Performance</h2>
+  <p class="section-sub">2024 has only 1 Sentinel-2 scene (2024-07-30), so higher error is structurally expected across all models.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Year</th><th>Model</th><th>Ver</th><th>RMSE (°C)</th><th>MAE (°C)</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr class="v1-row"><td>2023</td><td>Random Forest</td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4486</td><td class="num">0.2610</td><td></td></tr>
+        <tr class="v1-row"><td>2023</td><td>XGBoost (tuned)</td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4308</td><td class="num">0.2525</td><td></td></tr>
+        <tr><td>2023</td><td>Random Forest</td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4368</td><td class="num">0.2600</td><td style="color:var(--v2);font-size:12px">−0.012 vs v1 RF</td></tr>
+        <tr><td>2023</td><td>XGBoost (tuned)</td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4196</td><td class="num">0.2497</td><td style="color:var(--v2);font-size:12px">−0.011 vs v1 XGB</td></tr>
+        <tr style="border-top:2px solid var(--border)"></tr>
+        <tr class="v1-row warn-row"><td>2024 ⚠️</td><td>Random Forest</td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.5035</td><td class="num">0.2875</td><td style="color:var(--warn);font-size:12px">1 scene only</td></tr>
+        <tr class="v1-row warn-row"><td>2024 ⚠️</td><td>XGBoost (tuned)</td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.5038</td><td class="num">0.2901</td><td style="color:var(--warn);font-size:12px">1 scene only</td></tr>
+        <tr class="warn-row"><td>2024 ⚠️</td><td>Random Forest</td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4953</td><td class="num">0.2840</td><td style="color:var(--warn);font-size:12px">1 scene only</td></tr>
+        <tr class="warn-row"><td>2024 ⚠️</td><td>XGBoost (tuned)</td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4886</td><td class="num">0.2827</td><td style="color:var(--warn);font-size:12px">1 scene only</td></tr>
+        <tr style="border-top:2px solid var(--border)"></tr>
+        <tr class="v1-row"><td>2025</td><td>Random Forest</td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4109</td><td class="num">0.2844</td><td></td></tr>
+        <tr class="v1-row"><td>2025</td><td>XGBoost (tuned)</td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.3946</td><td class="num">0.2784</td><td></td></tr>
+        <tr><td>2025</td><td>Random Forest</td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.3922</td><td class="num">0.2758</td><td style="color:var(--v2);font-size:12px">−0.019 vs v1 RF</td></tr>
+        <tr><td>2025</td><td>XGBoost (tuned)</td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.3794</td><td class="num">0.2637</td><td style="color:var(--v2);font-size:12px">−0.015 vs v1 XGB</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ FUTURE ROADMAP -->
+<section id="roadmap">
+  <h2>🚀 Future Improvements — Roadmap to v3</h2>
+  <p class="section-sub">Ranked by expected impact on R² and feasibility given the current project stack.</p>
+
+  <div class="roadmap">
+    <div class="roadmap-card">
+      <div class="priority high">🟢 High impact · Immediately feasible</div>
+      <h4>Multi-city training with Netatmo</h4>
+      <p>Run <code>fetch_netatmo.py</code> on scene dates, merge with T31UES bands, train on all 5 cities. Doubles the training set. Leave-One-City-Out CV validates cross-city transfer. Expected R² gain: +0.03–0.06.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority high">🟢 High impact · Immediately feasible</div>
+      <h4>CNN with GPU — 100 epochs</h4>
+      <p>Done. Trained on Google Colab Tesla T4 via <code>colab_cnn_gpu.ipynb</code>. Final result: RMSE 0.5273, MAE 0.3099, R² 0.3691 (up from 0.3464 at 20 epochs CPU). Weights saved as <code>cnn_model_100ep.pt</code> in Drive.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority high">🟢 High impact · Medium effort</div>
+      <h4>Kriged weather surfaces</h4>
+      <p>Replace station-median HUMIDITY, wind_ms, SOLARRADIATION with spatially interpolated surfaces (kriging or IDW from station coordinates). Grid prediction range widens from ±1.3°C to physically realistic ±4–8°C.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority medium">🟡 Medium impact · Medium effort</div>
+      <h4>Landsat 8/9 LST feature</h4>
+      <p>Add Land Surface Temperature from Landsat Band 10 (30 m thermal) as an 8th feature. Requires temporal alignment with Sentinel-2 scenes (same or adjacent day) and reprojection to 10 m. Physically the strongest UHI signal.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority medium">🟡 Medium impact · Medium effort</div>
+      <h4>Building height / DSM</h4>
+      <p>NGI Belgium provides a 1-m Digital Surface Model. Derived features: sky-view factor, street canyon ratio, building density per 100 m². These encode the 3D urban morphology that drives nocturnal UHI retention.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority medium">🟡 Medium impact · High effort</div>
+      <h4>Temporal LSTM model</h4>
+      <p>Stack multiple scene dates as a time series per station → LSTM predicts anomaly incorporating heat accumulation dynamics. Captures multi-day heat wave build-up that single-scene snapshots miss.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority low">🔵 Lower priority · High effort</div>
+      <h4>Transfer learning for CNN</h4>
+      <p>Pretrain CNN on BigEarthNet (590k Sentinel-2 patches, 43 land-use classes), fine-tune on UHI anomaly. Solves the small-sample problem (5 575 rows) that limits the current CNN vs tree models.</p>
+    </div>
+    <div class="roadmap-card">
+      <div class="priority low">🔵 Lower priority · Medium effort</div>
+      <h4>SHAP explainability layer</h4>
+      <p>Add SHAP values to the deployed API: per-prediction feature attribution showing <em>why</em> a grid cell is hot (high B11? low NDVI? low wind?). Useful for city planners choosing intervention locations.</p>
+    </div>
+  </div>
+
+  <div class="callout purple" style="margin-top:24px">
+    <strong>On R² and what "good" means for UHI regression</strong>
+    R² = 0.578 is solid for a small-sample spatial regression on citizen-science data. Published UHI studies using satellite + station fusion typically report R² 0.55–0.75. The structural ceiling here is the weather-feature median approximation and spatial autocorrelation — not the model family. Switching to kriged surfaces alone is likely worth +0.08 R².
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ CHANGELOG -->
+<section id="changelog">
+  <h2>📋 Changelog — v1 to v2</h2>
+  <p class="section-sub">Key decisions in the order they were implemented.</p>
+  <div class="changelog">
+    <div class="cl-item rd"><div class="cl-date">Fix #1</div><div class="cl-body"><div class="cl-title">StandardScaler data leakage removed</div><div class="cl-desc">Moved <code>scaler.fit()</code> to after the train/test split. Evaluation metrics now reflect true generalisation.</div></div></div>
+    <div class="cl-item rd"><div class="cl-date">Fix #2</div><div class="cl-body"><div class="cl-title">LOSOCV per-fold scaler</div><div class="cl-desc">Each LOSOCV fold fits its own scaler on that fold's training stations. LOSOCV RMSE: 0.604 → 0.592.</div></div></div>
+    <div class="cl-item hl"><div class="cl-date">Feature</div><div class="cl-body"><div class="cl-title">B11 (SWIR) added as 7th input feature</div><div class="cl-desc">Raw Short-Wave Infrared adds absolute thermal inertia signal that NDBI's normalisation compresses. Feature set: 6 → 7.</div></div></div>
+    <div class="cl-item hl"><div class="cl-date">Architecture</div><div class="cl-body"><div class="cl-title">Stacked ensemble: RF + XGBoost → Ridge</div><div class="cl-desc">OOF predictions prevent meta-learner leakage. Ridge weights: RF 0.365 / XGB 0.685. R² gain: +0.007 over tuned XGBoost alone.</div></div></div>
+    <div class="cl-item hl"><div class="cl-date">Coverage</div><div class="cl-body"><div class="cl-title">T31UES downloaded — 5 Belgian cities for inference</div><div class="cl-desc">Brussels, Ghent, Antwerp (T31UES) join Leuven + Liège (T31UFT). Zero-shot spatial transfer; multi-city training is the v3 goal.</div></div></div>
+    <div class="cl-item rd"><div class="cl-date">Docs</div><div class="cl-body"><div class="cl-title">Markdown result cells corrected to match actual outputs</div><div class="cl-desc">Cells 58, 61, 65, 71 updated: correct best model (Stacked RF+XGB), R² (0.578), grid range (−1.34 to +0.52°C), Ridge weights (RF 0.365, XGB 0.685).</div></div></div>
+  </div>
+
+  <div class="summary-banner">
+    <div>
+      <h3>v2 in one sentence</h3>
+      <p>Two leakage fixes + B11 SWIR feature + stacked ensemble + 5-city Sentinel-2 coverage delivers +0.026 R², a spatially honest LOSOCV, and a foundation for multi-city training once Netatmo ground truth is collected.</p>
+    </div>
+    <div class="summary-stat">
+      <div class="big">+4.7%</div>
+      <div class="lbl">R² improvement<br>v1 → v2</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  Urban Heat AI · UCLL Bachelor Advanced AI 2025 · Mylene Aradani ·
+  Data: <a href="https://zenodo.org/records/14893734">Leuven.cool (Zenodo)</a> ·
+  <a href="https://dataspace.copernicus.eu/">Sentinel-2 (Copernicus)</a> ·
+  <a href="https://dev.netatmo.com/">Netatmo API</a>
+</footer>
+
+</body>
+</html>

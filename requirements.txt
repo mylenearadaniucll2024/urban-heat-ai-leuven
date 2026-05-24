@@ -13,3 +13,7 @@ xgboost
 plotly
 openkmi
 statsmodels
+shap
+groq
+python-dotenv
+xlrd

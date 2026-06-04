@@ -245,7 +245,7 @@
   <div class="hero-tags">
     <span class="tag blue">v1 · XGBoost (tuned) · R² 0.552</span>
     <span class="tag">→</span>
-    <span class="tag green">v2 · Stacked RF+XGB · R² 0.578</span>
+    <span class="tag green">v2 · Stacked RF+XGB · R² 0.599</span>
     <span class="tag">Sentinel-2 T31UFT + T31UES</span>
     <span class="tag">5 Belgian cities</span>
   </div>
@@ -265,14 +265,14 @@
   </div>
 
   <div class="metric-grid">
-    <div class="metric-card v1"><div class="label">RMSE (°C) · v1</div><div class="value blue">0.440</div><div class="delta worse">improved → 0.427 in v2</div></div>
-    <div class="metric-card v1"><div class="label">MAE (°C) · v1</div><div class="value blue">0.268</div><div class="delta worse">improved → 0.261 in v2</div></div>
-    <div class="metric-card v1"><div class="label">R² · v1</div><div class="value blue">0.552</div><div class="delta worse">improved → 0.578 in v2</div></div>
-    <div class="metric-card v1"><div class="label">CV RMSE · v1</div><div class="value blue">0.508</div><div class="delta worse">improved → 0.492 in v2</div></div>
-    <div class="metric-card"><div class="label">RMSE (°C) · v2</div><div class="value green">0.427</div><div class="delta better">−0.013°C vs v1</div></div>
-    <div class="metric-card"><div class="label">MAE (°C) · v2</div><div class="value green">0.261</div><div class="delta better">−0.007°C vs v1</div></div>
-    <div class="metric-card"><div class="label">R² · v2</div><div class="value green">0.578</div><div class="delta better">+0.026 over v1</div></div>
-    <div class="metric-card"><div class="label">LOSOCV RMSE · v2</div><div class="value green">0.592</div><div class="delta better">was 0.604 in v1</div></div>
+    <div class="metric-card v1"><div class="label">RMSE (°C) · v1</div><div class="value blue">0.440</div><div class="delta worse">improved → 0.416 in v2</div></div>
+    <div class="metric-card v1"><div class="label">MAE (°C) · v1</div><div class="value blue">0.268</div><div class="delta worse">improved → 0.255 in v2</div></div>
+    <div class="metric-card v1"><div class="label">R² · v1</div><div class="value blue">0.552</div><div class="delta worse">improved → 0.599 in v2</div></div>
+    <div class="metric-card v1"><div class="label">CV RMSE · v1</div><div class="value blue">0.508</div><div class="delta worse">improved → 0.484 in v2</div></div>
+    <div class="metric-card"><div class="label">RMSE (°C) · v2</div><div class="value green">0.416</div><div class="delta better">−0.024°C vs v1</div></div>
+    <div class="metric-card"><div class="label">MAE (°C) · v2</div><div class="value green">0.255</div><div class="delta better">−0.013°C vs v1</div></div>
+    <div class="metric-card"><div class="label">R² · v2</div><div class="value green">0.599</div><div class="delta better">+0.047 over v1</div></div>
+    <div class="metric-card"><div class="label">LOSOCV RMSE · v2</div><div class="value green">0.575</div><div class="delta better">was 0.604 in v1</div></div>
   </div>
 </section>
 
@@ -289,18 +289,18 @@
         <tr class="v1-row"><td><span class="model-badge"><span class="dot" style="background:#a5d6ff"></span>XGBoost (tuned) <span class="badge bestv1" style="margin-left:4px">best v1</span></span></td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.4402</td><td class="num">0.2684</td><td class="num">0.5517</td><td class="num">0.5083</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:55.2%;background:var(--v1)"></div></div></td></tr>
         <tr class="v1-row"><td><span class="model-badge"><span class="dot" style="background:#6e7681"></span>CNN (20 epochs, CPU)</span></td><td><span style="color:var(--v1);font-size:12px">v1</span></td><td class="num">0.5436</td><td class="num">0.3234</td><td class="num">0.3297</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:33%;background:#444c56"></div></div></td></tr>
         <tr><td colspan="7" style="padding:3px;background:var(--bg)"></td></tr>
-        <tr><td><span class="model-badge"><span class="dot" style="background:#56d364"></span>Random Forest</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4403</td><td class="num">0.2700</td><td class="num">0.5516</td><td class="num">0.5027</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:55.2%;background:var(--v2)"></div></div></td></tr>
-        <tr><td><span class="model-badge"><span class="dot" style="background:#7ee787"></span>XGBoost</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4297</td><td class="num">0.2651</td><td class="num">0.5728</td><td class="num">0.5019</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:57.3%;background:var(--v2)"></div></div></td></tr>
-        <tr><td><span class="model-badge"><span class="dot" style="background:#aff5b4"></span>XGBoost (tuned)</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4306</td><td class="num">0.2630</td><td class="num">0.5711</td><td class="num">0.4916</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:57.1%;background:var(--v2)"></div></div></td></tr>
-        <tr class="best-row"><td><span class="model-badge"><span class="dot" style="background:#3fb950"></span>Stacked RF+XGB <span class="badge new" style="margin-left:4px">NEW</span> <span class="badge best" style="margin-left:4px">best v2</span></span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num" style="color:var(--v2);font-weight:700">0.4270</td><td class="num" style="color:var(--v2);font-weight:700">0.2613</td><td class="num" style="color:var(--v2);font-weight:700">0.5782</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:57.8%;background:#3fb950"></div></div></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#56d364"></span>Random Forest</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4257</td><td class="num">0.2637</td><td class="num">0.5807</td><td class="num">0.4972</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:58.1%;background:var(--v2)"></div></div></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#7ee787"></span>XGBoost</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4221</td><td class="num">0.2587</td><td class="num">0.5878</td><td class="num">0.4904</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:58.8%;background:var(--v2)"></div></div></td></tr>
+        <tr><td><span class="model-badge"><span class="dot" style="background:#aff5b4"></span>XGBoost (tuned)</span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.4220</td><td class="num">0.2576</td><td class="num">0.5880</td><td class="num">0.4841</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:58.8%;background:var(--v2)"></div></div></td></tr>
+        <tr class="best-row"><td><span class="model-badge"><span class="dot" style="background:#3fb950"></span>Stacked RF+XGB <span class="badge new" style="margin-left:4px">NEW</span> <span class="badge best" style="margin-left:4px">best v2</span></span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num" style="color:var(--v2);font-weight:700">0.4163</td><td class="num" style="color:var(--v2);font-weight:700">0.2550</td><td class="num" style="color:var(--v2);font-weight:700">0.5991</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:59.9%;background:#3fb950"></div></div></td></tr>
         <tr><td><span class="model-badge"><span class="dot" style="background:#8b949e"></span>CNN (20 epochs, CPU) <span class="badge gpu" style="margin-left:4px">100ep · T4 GPU</span></span></td><td><span style="color:var(--v2);font-size:12px">v2</span></td><td class="num">0.5273</td><td class="num">0.3099</td><td class="num">0.3691</td><td class="num">—</td><td><div class="r2-bar"><div class="r2-bar-fill" style="width:36.9%;background:#444c56"></div></div></td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="callout blue" style="margin-top:20px">
-    <strong>Why is R² only ~0.58?</strong>
-    5 575 rows after scene-matching is small for ML. Only NDVI/NDBI/B11 vary spatially — weather features (humidity, wind, solar) are station-level medians, not interpolated surfaces. The ∼0.09°C LOSOCV gap reflects structural spatial autocorrelation in the dense Leuven.cool network. With more cities + kriged weather surfaces, R² 0.65–0.75 is realistic.
+    <strong>Why is R² only ~0.60?</strong>
+    5 575 rows after scene-matching is small for ML. NDVI/NDBI/B11/IMPERVIOUSNESS vary spatially — weather features (humidity, wind, solar) are station-level medians, not interpolated surfaces. The ∼0.16°C LOSOCV gap (test RMSE 0.416 vs LOSOCV 0.575) reflects structural spatial autocorrelation in the dense Leuven.cool network. With more cities + kriged weather surfaces, R² 0.65–0.75 is realistic.
   </div>
 </section>
 
@@ -317,12 +317,13 @@
     <div class="diff-card">
       <h4>✨ New Feature & Architecture</h4>
       <div class="diff-item"><span class="diff-icon">🟢</span><div class="diff-text"><strong>B11 (SWIR) — 7th feature added</strong><span>Raw SWIR captures absolute thermal inertia. NDBI normalises it away (dense urban ÷ value). B11 raw keeps the scale, letting the model distinguish high-density impervious from sparse impervious at the same NDBI ratio.</span></div></div>
-      <div class="diff-item"><span class="diff-icon">🟢</span><div class="diff-text"><strong>Stacked ensemble: Ridge meta-learner</strong><span>OOF predictions from RF + XGBoost → Ridge. Weights: RF 0.365, XGB 0.685. OOF generation prevents leakage into the meta-learner. +0.007 R² over tuned XGBoost alone.</span></div></div>
+      <div class="diff-item"><span class="diff-icon">🟢</span><div class="diff-text"><strong>IMPERVIOUSNESS (EU HRL 2018) — 8th feature added</strong><span>Sealed-surface fraction at 10 m resolution from the EEA ImageServer REST API. Becomes the dominant SHAP driver (#1, mean |SHAP| = 0.200) — permanently sealed surfaces directly suppress evaporative cooling and increase thermal mass. NDVI's SHAP importance collapsed 80% (0.189 → 0.037) once this direct measure replaced the proxy signal.</span></div></div>
+      <div class="diff-item"><span class="diff-icon">🟢</span><div class="diff-text"><strong>Stacked ensemble: Ridge meta-learner</strong><span>OOF predictions from RF + XGBoost → Ridge. Weights: RF 0.365, XGB 0.685. OOF generation prevents leakage into the meta-learner. +0.011 R² over tuned XGBoost alone.</span></div></div>
     </div>
     <div class="diff-card">
       <h4>📐 Feature Set Summary</h4>
       <div class="diff-item"><span class="diff-icon">—</span><div class="diff-text"><strong>v1 features (6)</strong><span>NDVI · NDBI · HUMIDITY · ALTITUDE · wind_ms · SOLARRADIATION</span></div></div>
-      <div class="diff-item"><span class="diff-icon">✅</span><div class="diff-text"><strong>v2 features (7)</strong><span>NDVI · NDBI · <strong style="color:var(--v2)">B11</strong> · HUMIDITY · ALTITUDE · wind_ms · SOLARRADIATION</span></div></div>
+      <div class="diff-item"><span class="diff-icon">✅</span><div class="diff-text"><strong>v2 features (8)</strong><span>NDVI · NDBI · <strong style="color:var(--v2)">B11</strong> · HUMIDITY · ALTITUDE · wind_ms · SOLARRADIATION · <strong style="color:var(--v2)">IMPERVIOUSNESS</strong></span></div></div>
     </div>
     <div class="diff-card">
       <h4>🗺️ Geographic Coverage</h4>
@@ -348,6 +349,7 @@
         <tr><td><strong>ALTITUDE</strong></td><td>DEM (station metadata)</td><td><span class="badge best">KEPT</span></td><td>Lapse rate ≈ 0.65°C per 100 m. Leuven's elevation range (10–90 m) produces up to 0.5°C systematic offset without this feature.</td></tr>
         <tr><td><strong>wind_ms</strong></td><td>RMI / Leuven.cool</td><td><span class="badge best">KEPT</span></td><td>Wind ventilates urban canyons and disperses heat plumes. Strong negative UHI correlation in calm conditions (summer anticyclone).</td></tr>
         <tr><td><strong>SOLARRADIATION</strong></td><td>RMI / Leuven.cool</td><td><span class="badge best">KEPT</span></td><td>Incoming shortwave drives surface heating. Correlates with anomaly magnitude on clear-sky summer days (all training scenes are low-cloud &lt;20%).</td></tr>
+        <tr><td><strong>IMPERVIOUSNESS</strong><br><span style="font-size:12px;color:var(--muted)">EU HRL 2018, 10 m</span></td><td>EEA ImageServer</td><td><span class="badge new">ADDED v2</span></td><td>Sealed-surface fraction (0–100%) from the European Environment Agency High-Resolution Layer 2018. The dominant SHAP driver (#1, mean |SHAP| = 0.200). Directly encodes evaporative suppression and thermal mass — structural land-cover signal that spectral indices (NDBI, B11) can only approximate. NDVI's importance dropped 80% once this direct measure was available.</td></tr>
         <tr class="warn-row"><td><strong>B04, B08 raw</strong></td><td>Sentinel-2</td><td><span class="badge drop">DROPPED</span></td><td>Redundant once NDVI is computed. Including raw bands alongside the ratio adds collinear features with no new information. Kept only in CNN image patches where spatial context matters.</td></tr>
         <tr class="warn-row"><td><strong>B12 (SWIR-2)</strong></td><td>Sentinel-2</td><td><span class="badge drop">DROPPED</span></td><td>Pearson ρ(B11, B12) &gt; 0.95 on summer scenes. Highly collinear with B11. Adding both increases noise without adding signal; B11 preferred (used in NDBI formula).</td></tr>
         <tr class="warn-row"><td><strong>NDWI</strong><br><span style="font-size:12px;color:var(--muted)">(B03−B08)/(B03+B08)</span></td><td>Sentinel-2</td><td><span class="badge drop">DROPPED</span></td><td>Water index has near-zero values everywhere except the Dijle river, which covers &lt;0.5% of the grid. Adds noise for 99.5% of pixels.</td></tr>
@@ -396,7 +398,7 @@
       <div class="pipeline-label">Merge & Filter</div>
       <div class="pipeline-body">
         <strong>30 894 890 rows → 5 575 ML rows</strong>
-        <p>Spatial join: match each sensor reading to its closest Sentinel-2 scene within the ±7-day window.<br>Drop rows where any feature is NaN (cloud mask, missing sensor readings).<br>Result: one row per (station × scene date) with 7 features + anomaly.</p>
+        <p>Spatial join: match each sensor reading to its closest Sentinel-2 scene within the ±7-day window.<br>Drop rows where any feature is NaN (cloud mask, missing sensor readings).<br>Result: one row per (station × scene date) with 8 features + anomaly.</p>
       </div>
     </div>
     <div class="pipeline-step warn">
@@ -598,7 +600,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
     <div class="roadmap-card">
       <div class="priority medium">🟡 Medium impact · Medium effort</div>
       <h4>Landsat 8/9 LST feature</h4>
-      <p>Add Land Surface Temperature from Landsat Band 10 (30 m thermal) as an 8th feature. Requires temporal alignment with Sentinel-2 scenes (same or adjacent day) and reprojection to 10 m. Physically the strongest UHI signal.</p>
+      <p>Add Land Surface Temperature from Landsat Band 10 (30 m thermal) as a 9th feature (IMPERVIOUSNESS is now 8th). Requires temporal alignment with Sentinel-2 scenes (same or adjacent day) and reprojection to 10 m. Physically the strongest UHI signal.</p>
     </div>
     <div class="roadmap-card">
       <div class="priority medium">🟡 Medium impact · Medium effort</div>
@@ -634,20 +636,21 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
   <p class="section-sub">Key decisions in the order they were implemented.</p>
   <div class="changelog">
     <div class="cl-item rd"><div class="cl-date">Fix #1</div><div class="cl-body"><div class="cl-title">StandardScaler data leakage removed</div><div class="cl-desc">Moved <code>scaler.fit()</code> to after the train/test split. Evaluation metrics now reflect true generalisation.</div></div></div>
-    <div class="cl-item rd"><div class="cl-date">Fix #2</div><div class="cl-body"><div class="cl-title">LOSOCV per-fold scaler</div><div class="cl-desc">Each LOSOCV fold fits its own scaler on that fold's training stations. LOSOCV RMSE: 0.604 → 0.592.</div></div></div>
+    <div class="cl-item rd"><div class="cl-date">Fix #2</div><div class="cl-body"><div class="cl-title">LOSOCV per-fold scaler</div><div class="cl-desc">Each LOSOCV fold fits its own scaler on that fold's training stations. LOSOCV RMSE: 0.604 → 0.575.</div></div></div>
     <div class="cl-item hl"><div class="cl-date">Feature</div><div class="cl-body"><div class="cl-title">B11 (SWIR) added as 7th input feature</div><div class="cl-desc">Raw Short-Wave Infrared adds absolute thermal inertia signal that NDBI's normalisation compresses. Feature set: 6 → 7.</div></div></div>
-    <div class="cl-item hl"><div class="cl-date">Architecture</div><div class="cl-body"><div class="cl-title">Stacked ensemble: RF + XGBoost → Ridge</div><div class="cl-desc">OOF predictions prevent meta-learner leakage. Ridge weights: RF 0.365 / XGB 0.685. R² gain: +0.007 over tuned XGBoost alone.</div></div></div>
+    <div class="cl-item hl"><div class="cl-date">Feature</div><div class="cl-body"><div class="cl-title">IMPERVIOUSNESS (EU HRL 2018) added as 8th feature</div><div class="cl-desc">Sealed-surface fraction from EEA ImageServer. Becomes the dominant SHAP driver (#1, mean |SHAP| = 0.200). NDVI importance collapsed 80% once the direct measure replaced the proxy. Feature set: 7 → 8.</div></div></div>
+    <div class="cl-item hl"><div class="cl-date">Architecture</div><div class="cl-body"><div class="cl-title">Stacked ensemble: RF + XGBoost → Ridge</div><div class="cl-desc">OOF predictions prevent meta-learner leakage. Ridge weights: RF 0.365 / XGB 0.685. R² gain: +0.011 over tuned XGBoost alone.</div></div></div>
     <div class="cl-item hl"><div class="cl-date">Coverage</div><div class="cl-body"><div class="cl-title">T31UES downloaded — 5 Belgian cities for inference</div><div class="cl-desc">Brussels, Ghent, Antwerp (T31UES) join Leuven + Liège (T31UFT). Zero-shot spatial transfer; multi-city training is the v3 goal.</div></div></div>
-    <div class="cl-item rd"><div class="cl-date">Docs</div><div class="cl-body"><div class="cl-title">Markdown result cells corrected to match actual outputs</div><div class="cl-desc">Cells 58, 61, 65, 71 updated: correct best model (Stacked RF+XGB), R² (0.578), grid range (−1.34 to +0.52°C), Ridge weights (RF 0.365, XGB 0.685).</div></div></div>
+    <div class="cl-item rd"><div class="cl-date">Docs</div><div class="cl-body"><div class="cl-title">Markdown result cells corrected to match actual outputs</div><div class="cl-desc">All result cells updated: best model (Stacked RF+XGB), R² (0.599), LOSOCV (0.575 ± 0.460), Ridge weights (RF 0.365, XGB 0.685).</div></div></div>
   </div>
 
   <div class="summary-banner">
     <div>
       <h3>v2 in one sentence</h3>
-      <p>Two leakage fixes + B11 SWIR feature + stacked ensemble + 5-city Sentinel-2 coverage delivers +0.026 R², a spatially honest LOSOCV, and a foundation for multi-city training once Netatmo ground truth is collected.</p>
+      <p>Two leakage fixes + B11 SWIR + IMPERVIOUSNESS (EU HRL 2018) + stacked ensemble + 5-city Sentinel-2 coverage delivers +0.047 R², a spatially honest LOSOCV (0.575), and a foundation for multi-city training once Netatmo ground truth is collected.</p>
     </div>
     <div class="summary-stat">
-      <div class="big">+4.7%</div>
+      <div class="big">+8.5%</div>
       <div class="lbl">R² improvement<br>v1 → v2</div>
     </div>
   </div>
